@@ -1,139 +1,57 @@
 # ORBIT
 
-Personal relationship cartography. Maps proximity, not activity.
+ORBIT is a spatial, identity-driven relationship system. You define a personal worldview — your mission, current work, thinking partner preference, and intellectual narrative — and ORBIT uses that identity to surface real, verifiable people you should be in conversation with. Those people are mapped as a persistent orbit around you, moving inward as relationships deepen from awareness to actual conversation. The goal is 100 conversations.
 
-The AI populates the system. It is not the system. The orbit map exists and persists without any AI calls.
+## What it does
 
----
+You start by writing your identity: what you're building, what you believe, and who you'd want to think alongside. That identity drives two AI-powered discovery modes — Search (you name the domain) and Suggest (ORBIT surfaces who you haven't considered). Every person returned is placed in your orbit at the outermost ring and can be moved inward as you reach out and get responses. The orbit persists across sessions via KV and localStorage, so the spatial record of your relationship-building stays intact.
 
-## ENV Variables
+## What it is not
 
-| Variable | Description |
-|---|---|
-| `ANTHROPIC_API_KEY` | Your Anthropic API key — powers SEARCH and SUGGEST |
-| `SHEETS_WEBHOOK_URL` | Google Apps Script web app URL — see setup below |
+Not a CRM. Not a sales pipeline. Not a networking automation tool. Not a recommendation feed. Not a messaging or inbox system. ORBIT does not rank people globally, optimize for engagement, or automate any outreach. All interactions are user-initiated.
 
-Add to Vercel:
+## The five primitives
 
-```bash
-vercel env add ANTHROPIC_API_KEY production
-vercel env add SHEETS_WEBHOOK_URL production
-vercel --prod --yes
-```
+**Identity** — A structured representation of the user's worldview. The root of all computation. No system output is valid without it.
 
----
+**Contact** — A single discovered individual: name, role, a specific why tied to the user's identity, contact link, reachability metadata, stage, and notes.
 
-## Google Sheets Setup
+**Stage** — Relational depth in fixed order: Identified → Reached Out → Replied → Conversation. Movement is always inward and irreversible in meaning.
 
-### 1. Create the sheet
+**Orbit** — The spatial visualization: four concentric rings mapped to Stage, deterministic node positioning via stable hash, centered on Identity. No alternative visual paradigms.
 
-1. Create a new Google Sheet at [sheets.google.com](https://sheets.google.com)
-2. Rename the first tab to exactly: `contacts`
-3. Add this header row (row 1, exact column order):
+**Interaction** — Any meaningful engagement with a contact: outreach sent, reply received, conversation held, notes updated, stage changed. Always user-initiated.
 
-```
-id | name | role | why | url | platform | status | notes | interaction_log | date_added | search_hash | created_at
-```
+## The 3E retrieval framework
 
-### 2. Add the Apps Script webhook
+**Practitioner** — Someone actively doing what you're trying to build, right now. They have direct execution experience and know what breaks. Returned by Suggest when you need ground-level knowledge from someone inside the work.
 
-1. Open **Extensions → Apps Script**
-2. Delete all existing code and paste the following:
+**Theorist** — Someone who has studied the underlying mechanics at depth: researchers, analysts, people with the conceptual map of your domain. Returned when you need to understand why something works the way it does, not just that it does.
 
-```javascript
-const SHEET_NAME = 'contacts'
-const COLS = [
-  'id','name','role','why','url','platform',
-  'status','notes','interaction_log',
-  'date_added','search_hash','created_at'
-]
+**Connector** — Someone who bridges your work to a larger cultural moment: journalists, public intellectuals, writers who can situate what you're doing inside a broader conversation. Returned when you need to understand where your work fits and who is already framing that territory publicly.
 
-function doGet(e) {
-  if (e.parameter.action === 'getAll') {
-    const sheet  = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME)
-    const values = sheet.getDataRange().getValues()
-    const rows   = values.slice(1).map(r => r.map(String))
-    return json({ rows })
-  }
-  return json({ error: 'unknown action' })
-}
+This framework applies to Suggest only. Search returns 6 results without category constraint.
 
-function doPost(e) {
-  const body = JSON.parse(e.postData.contents)
+## Tech stack
 
-  if (body.action === 'add') {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME)
-    sheet.appendRow(body.row)
-    return json({ ok: true })
-  }
+- Frontend: vanilla HTML/CSS/JS, no framework, no bundler
+- API: Vercel serverless functions (Node.js ESM)
+- AI: Anthropic Claude (`claude-sonnet-4-20250514`) with web search
+- Persistence: Vercel KV (identity + contacts, 90-day TTL), Google Sheets (contact graph, V1)
+- Email: Resend
 
-  if (body.action === 'update') {
-    const sheet  = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME)
-    const values = sheet.getDataRange().getValues()
-    for (let i = 1; i < values.length; i++) {
-      if (String(values[i][0]) === body.id) {
-        for (const [key, val] of Object.entries(body.fields)) {
-          const col = COLS.indexOf(key)
-          if (col >= 0) sheet.getRange(i + 1, col + 1).setValue(val)
-        }
-        break
-      }
-    }
-    return json({ ok: true })
-  }
+## Principles
 
-  return json({ error: 'unknown action' })
-}
+The spatial model is fixed — concentric, stage-based, deterministic, centered on Identity.
 
-function json(data) {
-  return ContentService
-    .createTextOutput(JSON.stringify(data))
-    .setMimeType(ContentService.MimeType.JSON)
-}
-```
+All discovery is conditioned on Identity. No global or identity-free search.
 
-3. Click **Save** (Ctrl+S / Cmd+S)
+No leaderboards, scoring systems, or popularity metrics.
 
-### 3. Deploy as a web app
+Stage order is permanent: Identified → Reached Out → Replied → Conversation.
 
-1. Click **Deploy → New deployment**
-2. Click the gear icon → select **Web app**
-3. Set:
-   - Description: `ORBIT webhook`
-   - Execute as: **Me**
-   - Who has access: **Anyone**
-4. Click **Deploy**
-5. Copy the **Web app URL** — it looks like `https://script.google.com/macros/s/ABC.../exec`
+ORBIT never auto-sends, auto-follows-up, or simulates relationships.
 
-### 4. Wire it to Vercel
+## Status
 
-```bash
-vercel env add SHEETS_WEBHOOK_URL production
-# paste the web app URL when prompted
-vercel --prod --yes
-```
-
----
-
-## Offline behavior
-
-ORBIT works fully without Sheets. Every write is mirrored to `localStorage` immediately. If Sheets is unreachable, operations queue locally and flush automatically on the next successful connection.
-
----
-
-## EWS Integration
-
-In the **SEARCH** view, click **+ Include EWS context** and paste your EWS story into the expanded textarea. ORBIT injects this into the identity pack before every AI call, surfacing people who are more likely to resonate with your specific worldview — not just your stated interests.
-
----
-
-## Stages
-
-| Ring | Stage | Meaning |
-|---|---|---|
-| 4 (outer) | Identified | On your radar |
-| 3 | Reached Out | Contact made |
-| 2 | Replied | They responded |
-| 1 (inner) | Conversation | Active relationship |
-
-Movement is always inward. Getting someone closer to center is the goal.
+V1 — single user, invite only. No installation instructions yet. No contribution guide yet.
