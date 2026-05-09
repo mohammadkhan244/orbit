@@ -188,6 +188,101 @@
       letter-spacing: 0.1em; margin-top: 14px; min-height: 1.4em;
     }
 
+    /* ── GRAVITY PROFILE NAV LINK ── */
+    #gravity-profile-link {
+      font-family: 'Courier Prime', monospace;
+      font-size: 12px; font-weight: 400;
+      letter-spacing: 0.14em;
+      color: var(--text-70);
+      text-transform: uppercase;
+      text-decoration: none;
+      cursor: pointer;
+      transition: color 0.15s ease;
+      background: none; border: none; padding: 0;
+    }
+    #gravity-profile-link:hover {
+      color: var(--accent);
+      text-decoration: underline;
+    }
+
+    /* ── GRAVITY PROFILE MODAL ── */
+    .gp-overlay {
+      position: fixed; inset: 0; z-index: 201;
+      background: #0a0a0a;
+      display: flex; align-items: flex-start; justify-content: center;
+      padding: 80px 24px 60px;
+      overflow-y: auto;
+    }
+    .gp-inner { max-width: 560px; width: 100%; }
+    .gp-eyebrow {
+      font-family: 'Courier Prime', monospace;
+      font-size: 10px; letter-spacing: 0.24em;
+      color: rgba(184,115,51,0.5);
+      text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+    .gp-headline {
+      font-family: 'Courier Prime', monospace;
+      font-size: 22px; font-weight: 400;
+      color: rgba(240,236,228,0.72);
+      line-height: 1.4;
+      margin-bottom: 48px; max-width: 440px;
+    }
+    .gp-field { margin-bottom: 32px; }
+    .gp-label {
+      display: block;
+      font-family: 'Courier Prime', monospace;
+      font-size: 10px; letter-spacing: 0.18em;
+      color: rgba(184,115,51,0.65);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .gp-input, .gp-textarea {
+      width: 100%; background: transparent;
+      border: none; border-bottom: 1px solid rgba(184,115,51,0.22);
+      color: #f0ece4;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px; font-weight: 300;
+      padding: 4px 0 14px;
+      outline: none; line-height: 1.5;
+      transition: border-color 0.2s ease;
+      resize: none;
+    }
+    .gp-input::placeholder, .gp-textarea::placeholder { color: rgba(240,236,228,0.18); }
+    .gp-input:focus, .gp-textarea:focus { border-bottom-color: rgba(184,115,51,0.5); }
+    .gp-btn-row { display: flex; gap: 20px; align-items: center; margin-top: 8px; }
+    .gp-save {
+      background: none;
+      border: 1px solid rgba(184,115,51,0.45);
+      color: #b87333;
+      font-family: 'Courier Prime', monospace;
+      font-size: 12px; letter-spacing: 0.18em;
+      text-transform: uppercase;
+      padding: 12px 36px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .gp-save:hover:not(:disabled) {
+      background: rgba(184,115,51,0.08);
+      border-color: #b87333; color: #f0ece4;
+    }
+    .gp-save:disabled { opacity: 0.4; cursor: not-allowed; }
+    .gp-cancel {
+      background: none; border: none;
+      color: rgba(240,236,228,0.3);
+      font-family: 'Courier Prime', monospace;
+      font-size: 11px; letter-spacing: 0.14em;
+      text-transform: uppercase;
+      cursor: pointer; padding: 12px 0;
+      transition: color 0.15s ease;
+    }
+    .gp-cancel:hover { color: rgba(240,236,228,0.6); }
+    .gp-error {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px; color: rgba(184,115,51,0.65);
+      margin-top: 14px; min-height: 1.4em;
+    }
+
     /* ── ADMIN BADGE ── */
     #admin-badge {
       font-family: 'Courier Prime', monospace;
@@ -218,6 +313,7 @@
       <li><a data-view="orbit"  class="active">ORBIT</a></li>
       <li><a data-view="search">SEARCH</a></li>
       <li><a data-view="suggest">SUGGEST</a></li>
+      <li><button id="gravity-profile-link">Gravity Profile</button></li>
     </ul>
     <span id="admin-badge" hidden>ADMIN</span>
   </nav>
@@ -245,6 +341,128 @@
       window.ORBIT_SESSION_PROMISE = new Promise(function(r) { _res = r })
       window._orbitSessionResolve = _res
     })()
+
+    window.showGravityProfile = function() {
+      if (document.getElementById('gravity-profile-modal')) return
+
+      const sessionId = localStorage.getItem('orbit_session_id') || ''
+      const identity = window.ORBIT_IDENTITY
+        || (function() { try { return JSON.parse(localStorage.getItem('orbit_identity') || 'null') } catch { return null } })()
+        || {}
+
+      const overlay = document.createElement('div')
+      overlay.id = 'gravity-profile-modal'
+      overlay.className = 'gp-overlay'
+
+      const inner = document.createElement('div')
+      inner.className = 'gp-inner'
+
+      const eyebrow = document.createElement('div')
+      eyebrow.className = 'gp-eyebrow'
+      eyebrow.textContent = 'GRAVITY PROFILE'
+
+      const headline = document.createElement('div')
+      headline.className = 'gp-headline'
+      headline.textContent = 'Your identity shapes every search and suggestion.'
+
+      const FIELDS = [
+        { key: 'name',        label: 'Your Name',                                      placeholder: 'First and last name',                        type: 'input'    },
+        { key: 'mission',     label: 'What are you working on?',                       placeholder: '2–3 sentences. What is the thing?',           type: 'textarea' },
+        { key: 'north_stars', label: 'What do you want to be known for?',             placeholder: 'The work, the idea, the reputation.',          type: 'input'    },
+        { key: 'worldview',   label: 'What kind of thinking partner are you looking for?', placeholder: 'Someone who can challenge, co-think, build.', type: 'textarea' },
+      ]
+
+      const inputs = {}
+      inner.appendChild(eyebrow)
+      inner.appendChild(headline)
+
+      FIELDS.forEach(function(f) {
+        var fieldEl = document.createElement('div')
+        fieldEl.className = 'gp-field'
+
+        var label = document.createElement('label')
+        label.className = 'gp-label'
+        label.textContent = f.label
+
+        var input = f.type === 'textarea'
+          ? document.createElement('textarea')
+          : document.createElement('input')
+        input.className = f.type === 'textarea' ? 'gp-textarea' : 'gp-input'
+        input.placeholder = f.placeholder
+        if (f.type === 'textarea') input.rows = 3
+
+        if (f.key === 'north_stars') {
+          var ns = identity.north_stars
+          input.value = Array.isArray(ns) ? ns.join(', ') : (ns || '')
+        } else {
+          input.value = identity[f.key] || ''
+        }
+
+        inputs[f.key] = input
+        fieldEl.appendChild(label)
+        fieldEl.appendChild(input)
+        inner.appendChild(fieldEl)
+      })
+
+      var btnRow = document.createElement('div')
+      btnRow.className = 'gp-btn-row'
+
+      var saveBtn = document.createElement('button')
+      saveBtn.className = 'gp-save'
+      saveBtn.textContent = 'Save Profile'
+
+      var cancelBtn = document.createElement('button')
+      cancelBtn.className = 'gp-cancel'
+      cancelBtn.textContent = 'Cancel'
+
+      var errorEl = document.createElement('div')
+      errorEl.className = 'gp-error'
+
+      btnRow.appendChild(saveBtn)
+      btnRow.appendChild(cancelBtn)
+      inner.appendChild(btnRow)
+      inner.appendChild(errorEl)
+      overlay.appendChild(inner)
+      document.body.appendChild(overlay)
+
+      cancelBtn.addEventListener('click', function() { overlay.remove() })
+
+      saveBtn.addEventListener('click', async function() {
+        var name    = inputs.name.value.trim()
+        var mission = inputs.mission.value.trim()
+        if (!name || !mission) {
+          errorEl.textContent = 'Name and what you\'re working on are required.'
+          return
+        }
+
+        saveBtn.disabled = true
+        saveBtn.textContent = 'Saving...'
+        errorEl.textContent = ''
+
+        var northRaw = inputs.north_stars.value.trim()
+        var updated = Object.assign({}, identity, {
+          name: name,
+          mission: mission,
+          north_stars: northRaw ? [northRaw] : [],
+          worldview: inputs.worldview.value.trim(),
+        })
+
+        window.ORBIT_IDENTITY = updated
+        try { localStorage.setItem('orbit_identity', JSON.stringify(updated)) } catch {}
+
+        if (sessionId) {
+          try {
+            await fetch('/api/identity', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ sessionId: sessionId, identity: updated }),
+            })
+          } catch {}
+        }
+
+        overlay.remove()
+      })
+    }
 
     window.showGuestModal = function() {
       if (document.getElementById('guest-modal')) return
@@ -321,6 +539,10 @@
         e.preventDefault()
         activate(link.dataset.view)
       })
+    })
+
+    document.getElementById('gravity-profile-link')?.addEventListener('click', () => {
+      window.showGravityProfile?.()
     })
   </script>
 

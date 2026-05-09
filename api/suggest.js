@@ -55,9 +55,15 @@ export default async function handler(req, res) {
       .map(b => b.text)
       .join('')
 
-    const match = raw.match(/\{[\s\S]*\}/)
-    if (!match) throw new Error('No JSON found in response')
-    const parsed = JSON.parse(match[0])
+    let parsed
+    try {
+      parsed = JSON.parse(raw)
+    } catch {
+      const start = raw.indexOf('{')
+      const end = raw.lastIndexOf('}')
+      if (start === -1 || end === -1) throw new Error('No JSON found in response')
+      parsed = JSON.parse(raw.slice(start, end + 1))
+    }
 
     return res.status(200).json({ ...parsed, search_hash })
   } catch (err) {
