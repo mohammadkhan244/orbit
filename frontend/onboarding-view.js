@@ -368,11 +368,17 @@ function buildForm() {
 
     // Store to KV — non-blocking, failure is graceful
     // sendWelcome: true triggers confirmation + notification emails via Resend
-    fetch('/api/identity', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId, identity, sendWelcome: true }),
-    }).catch(() => {})
+    try {
+      const r = await fetch('/api/identity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, identity, sendWelcome: true }),
+      })
+      const result = await r.json()
+      console.log('[onboarding] identity POST result:', result)
+    } catch (err) {
+      console.error('[onboarding] identity POST failed:', err)
+    }
 
     dismiss(overlay)
     window._orbitSessionResolve({ sessionId, identity })
