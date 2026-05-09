@@ -34,36 +34,58 @@ export default async function handler(req, res) {
     try {
       await kv.set(`orbit:identity:${sessionId}`, identity, { ex: TTL })
 
+      console.log('[identity] POST body flags:', { sendWelcome, sendUpdate, hasEmail: !!identity?.email, email: identity?.email })
+
       if (sendWelcome && identity.email && identity.email.includes('@')) {
         const name = identity.name || 'there'
-        resend.emails.send({
-          from: 'orbit@modernmyths.co',
-          to: identity.email,
-          subject: 'Your orbit is saved.',
-          text: `Hi ${name},\n\nYour orbit is saved. When ORBIT launches, you'll pick up exactly where you left off.\n\n— ORBIT`,
-        }).catch(err => console.error('[identity] confirmation email failed', err))
-        resend.emails.send({
-          from: 'orbit@modernmyths.co',
-          to: 'mohammad@modernmyths.co',
-          subject: `New gravity profile: ${name} — ${identity.email}`,
-          text: `Name: ${name}\nEmail: ${identity.email}\nMission: ${identity.mission || '—'}\nSession: ${sessionId}`,
-        }).catch(err => console.error('[identity] notification email failed', err))
+        try {
+          await resend.emails.send({
+            from: 'orbit@modernmyths.co',
+            to: identity.email,
+            subject: 'Your orbit is saved.',
+            text: `Hi ${name},\n\nYour orbit is saved. When ORBIT launches, you'll pick up exactly where you left off.\n\n- ORBIT`,
+          })
+          console.log('[identity] confirmation email sent to', identity.email)
+        } catch (err) {
+          console.error('[identity] confirmation email failed', err)
+        }
+        try {
+          await resend.emails.send({
+            from: 'orbit@modernmyths.co',
+            to: 'mohammad@modernmyths.co',
+            subject: `New gravity profile: ${name} - ${identity.email}`,
+            text: `Name: ${name}\nEmail: ${identity.email}\nMission: ${identity.mission || '-'}\nSession: ${sessionId}`,
+          })
+          console.log('[identity] notification email sent to mohammad@modernmyths.co')
+        } catch (err) {
+          console.error('[identity] notification email failed', err)
+        }
       }
 
       if (sendUpdate && identity.email && identity.email.includes('@')) {
         const name = identity.name || 'there'
-        resend.emails.send({
-          from: 'orbit@modernmyths.co',
-          to: identity.email,
-          subject: 'Your gravity profile has been updated.',
-          text: `Hi ${name},\n\nYour gravity profile has been updated.\n\nName: ${name}\nMission: ${identity.mission || '—'}\nThinking partner: ${identity.worldview || '—'}\n\n— ORBIT`,
-        }).catch(err => console.error('[identity] update email (user) failed', err))
-        resend.emails.send({
-          from: 'orbit@modernmyths.co',
-          to: 'mohammad@modernmyths.co',
-          subject: `Profile updated: ${name} — ${identity.email}`,
-          text: `Name: ${name}\nEmail: ${identity.email}\nMission: ${identity.mission || '—'}\nSession: ${sessionId}`,
-        }).catch(err => console.error('[identity] update email (notify) failed', err))
+        try {
+          await resend.emails.send({
+            from: 'orbit@modernmyths.co',
+            to: identity.email,
+            subject: 'Your gravity profile has been updated.',
+            text: `Hi ${name},\n\nYour gravity profile has been updated.\n\nName: ${name}\nMission: ${identity.mission || '-'}\nThinking partner: ${identity.worldview || '-'}\n\n- ORBIT`,
+          })
+          console.log('[identity] update email sent to', identity.email)
+        } catch (err) {
+          console.error('[identity] update email (user) failed', err)
+        }
+        try {
+          await resend.emails.send({
+            from: 'orbit@modernmyths.co',
+            to: 'mohammad@modernmyths.co',
+            subject: `Profile updated: ${name} - ${identity.email}`,
+            text: `Name: ${name}\nEmail: ${identity.email}\nMission: ${identity.mission || '-'}\nSession: ${sessionId}`,
+          })
+          console.log('[identity] update notification sent to mohammad@modernmyths.co')
+        } catch (err) {
+          console.error('[identity] update email (notify) failed', err)
+        }
       }
 
       return res.status(200).json({ ok: true })
