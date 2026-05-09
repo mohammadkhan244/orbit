@@ -30,7 +30,15 @@ export default async function handler(req, res) {
           }
         })
       )
-      return res.status(200).json({ profiles: profiles.filter(Boolean) })
+      const sorted = profiles
+        .filter(Boolean)
+        .sort((a, b) => {
+          if (!a.created_at && !b.created_at) return 0
+          if (!a.created_at) return 1
+          if (!b.created_at) return -1
+          return new Date(b.created_at) - new Date(a.created_at)
+        })
+      return res.status(200).json({ profiles: sorted })
     } catch (err) {
       console.error('[admin-auth] GET failed', err)
       return res.status(502).json({ error: 'KV unavailable', detail: err.message })

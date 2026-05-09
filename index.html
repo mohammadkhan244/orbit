@@ -363,68 +363,129 @@
     }
 
     /* ── ADMIN VIEW ── */
-    #admin-view { padding: 40px 32px; overflow-y: auto; }
-    .admin-wrap { max-width: 900px; margin: 0 auto; }
+    #admin-view { padding: 0; overflow: hidden; }
+    .admin-layout { display: flex; height: calc(100vh - 56px); }
+    .admin-left {
+      width: 300px; flex-shrink: 0;
+      overflow-y: auto;
+      padding: 28px 24px;
+      border-right: 1px solid rgba(184,115,51,0.10);
+    }
+    .admin-right { flex: 1; overflow-y: auto; padding: 40px 40px; }
     .admin-eyebrow {
       font-family: 'Courier Prime', monospace;
       font-size: 10px; letter-spacing: 0.24em;
       color: rgba(184,115,51,0.5);
       text-transform: uppercase;
-      margin-bottom: 32px;
-    }
-    .admin-headline {
-      font-family: 'Courier Prime', monospace;
-      font-size: 22px; font-weight: 400;
-      color: rgba(240,236,228,0.72);
-      line-height: 1.4;
-      margin-bottom: 36px;
-    }
-    .admin-status {
-      font-family: 'DM Sans', sans-serif;
-      font-size: 13px; color: rgba(240,236,228,0.35);
-      margin-bottom: 24px; min-height: 1.4em;
-    }
-    .admin-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 32px;
-    }
-    .admin-table th {
-      font-family: 'Courier Prime', monospace;
-      font-size: 9px; letter-spacing: 0.18em;
-      color: rgba(184,115,51,0.65);
-      text-transform: uppercase;
-      text-align: left;
-      padding: 0 16px 14px 0;
-      border-bottom: 1px solid rgba(184,115,51,0.18);
-    }
-    .admin-table td {
-      font-family: 'DM Sans', sans-serif;
-      font-size: 13px; color: rgba(240,236,228,0.75);
-      padding: 14px 16px 14px 0;
-      border-bottom: 1px solid rgba(184,115,51,0.07);
-      vertical-align: top;
-      line-height: 1.5;
-    }
-    .admin-table tr:last-child td { border-bottom: none; }
-    .admin-cell-mono {
-      font-family: 'Courier Prime', monospace;
-      font-size: 11px; color: rgba(240,236,228,0.4);
-    }
-    .admin-cell-name {
-      font-family: 'Courier Prime', monospace;
-      font-size: 13px; color: #f0ece4;
+      margin-bottom: 20px;
     }
     .admin-count {
       font-family: 'Courier Prime', monospace;
-      font-size: 11px; letter-spacing: 0.14em;
+      font-size: 11px; letter-spacing: 0.12em;
+      color: rgba(184,115,51,0.4);
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+    .admin-status {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px; color: rgba(240,236,228,0.3);
+      padding: 8px 0;
+    }
+    .admin-row {
+      padding: 14px 0;
+      border-bottom: 1px solid rgba(184,115,51,0.07);
+      cursor: pointer;
+    }
+    .admin-row:hover { background: rgba(184,115,51,0.05); padding: 14px 8px; margin: 0 -8px; }
+    .admin-row.selected { background: rgba(184,115,51,0.09); padding: 14px 8px; margin: 0 -8px; }
+    .admin-row-name {
+      font-family: 'Courier Prime', monospace;
+      font-size: 13px; color: #f0ece4;
+      margin-bottom: 2px;
+    }
+    .admin-row-meta {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px; color: rgba(240,236,228,0.35);
+      margin-bottom: 4px;
+    }
+    .admin-row-mission {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px; color: rgba(240,236,228,0.55);
+      line-height: 1.4;
+    }
+    .admin-empty {
+      display: flex; align-items: center; justify-content: center;
+      height: 60%;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px; color: rgba(240,236,228,0.2);
+    }
+    .admin-detail-eyebrow {
+      font-family: 'Courier Prime', monospace;
+      font-size: 10px; letter-spacing: 0.24em;
+      color: rgba(184,115,51,0.5);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .admin-detail-name {
+      font-family: 'Courier Prime', monospace;
+      font-size: 22px; font-weight: 400;
+      color: #f0ece4;
+      margin-bottom: 36px;
+    }
+    .admin-detail-field { margin-bottom: 24px; }
+    .admin-detail-label {
+      font-family: 'Courier Prime', monospace;
+      font-size: 9px; letter-spacing: 0.2em;
       color: rgba(184,115,51,0.55);
       text-transform: uppercase;
-      margin-top: 8px;
+      margin-bottom: 6px;
+    }
+    .admin-detail-value {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px; color: rgba(240,236,228,0.75);
+      line-height: 1.6;
+    }
+    .admin-detail-value.mono {
+      font-family: 'Courier Prime', monospace;
+      font-size: 12px; color: rgba(240,236,228,0.4);
+      word-break: break-all;
+    }
+    .admin-contacts-heading {
+      font-family: 'Courier Prime', monospace;
+      font-size: 10px; letter-spacing: 0.18em;
+      color: rgba(184,115,51,0.5);
+      text-transform: uppercase;
+      margin: 40px 0 16px;
+      padding-top: 32px;
+      border-top: 1px solid rgba(184,115,51,0.10);
+    }
+    .admin-contact-row {
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(184,115,51,0.06);
+    }
+    .admin-contact-name {
+      font-family: 'Courier Prime', monospace;
+      font-size: 13px; color: #f0ece4;
+      margin-bottom: 2px;
+    }
+    .admin-contact-role {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px; color: rgba(240,236,228,0.4);
+      margin-bottom: 6px;
+    }
+    .admin-contact-stage {
+      font-family: 'Courier Prime', monospace;
+      font-size: 9px; letter-spacing: 0.12em;
+      color: rgba(184,115,51,0.65);
+      background: rgba(184,115,51,0.06);
+      border: 1px solid rgba(184,115,51,0.14);
+      border-radius: 2px; padding: 2px 8px;
+      text-transform: uppercase; display: inline-block;
     }
     @media (max-width: 700px) {
-      #admin-view { padding: 24px 16px; }
-      .admin-table th, .admin-table td { padding-right: 10px; font-size: 12px; }
+      .admin-layout { flex-direction: column; height: auto; }
+      .admin-left { width: 100%; border-right: none; border-bottom: 1px solid rgba(184,115,51,0.10); }
+      .admin-right { padding: 24px 16px; }
     }
   </style>
 </head>
@@ -458,39 +519,103 @@
   </main>
 
   <script>
-    // Admin mode: ?admin=true&code=X required. Verified state stored in sessionStorage.
+    // Admin mode: ?admin=true. Code entered via UI, never in URL.
     window.ORBIT_ADMIN = false
     window.ORBIT_ADMIN_PENDING = false
     ;(function() {
       var params = new URLSearchParams(location.search)
       if (params.get('admin') !== 'true') return
 
+      // Already verified this session — activate immediately
       if (sessionStorage.getItem('admin_verified') === 'true') {
         window.ORBIT_ADMIN = true
         document.getElementById('admin-badge').hidden = false
         document.getElementById('admin-nav-link').hidden = false
-        console.log('[ORBIT ADMIN] Admin mode active')
         return
       }
 
-      // First visit — verify code before granting admin UI
+      // Show code entry screen — blocks onboarding and nav
       window.ORBIT_ADMIN_PENDING = true
-      var code = params.get('code') || ''
-      fetch('/api/admin-auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: code }),
-      })
-      .then(function(r) { return r.json() })
-      .then(function(data) {
-        if (data.ok) {
-          sessionStorage.setItem('admin_verified', 'true')
-          location.reload()
-        } else {
-          location.href = '/'
-        }
-      })
-      .catch(function() { location.href = '/' })
+      var nav = document.querySelector('nav')
+      if (nav) nav.style.display = 'none'
+
+      // Inject shake keyframe
+      var ks = document.createElement('style')
+      ks.textContent = '@keyframes aco-shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}'
+      document.head.appendChild(ks)
+
+      var overlay = document.createElement('div')
+      overlay.id = 'admin-code-overlay'
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:300;background:#0a0a0a;display:flex;align-items:center;justify-content:center;padding:24px;'
+
+      var inner = document.createElement('div')
+      inner.style.cssText = 'max-width:400px;width:100%;'
+
+      var eyebrow = document.createElement('div')
+      eyebrow.style.cssText = 'font-family:"Courier Prime",monospace;font-size:10px;letter-spacing:0.24em;color:rgba(184,115,51,0.5);text-transform:uppercase;margin-bottom:32px;'
+      eyebrow.textContent = 'ORBIT'
+
+      var heading = document.createElement('div')
+      heading.style.cssText = 'font-family:"Courier Prime",monospace;font-size:22px;font-weight:400;color:rgba(240,236,228,0.72);margin-bottom:40px;'
+      heading.textContent = 'Admin Access'
+
+      var codeInput = document.createElement('input')
+      codeInput.type = 'password'
+      codeInput.placeholder = 'Enter access code'
+      codeInput.style.cssText = 'width:100%;background:transparent;border:none;border-bottom:1px solid rgba(184,115,51,0.22);color:#f0ece4;font-family:"DM Sans",sans-serif;font-size:16px;font-weight:300;padding:4px 0 14px;outline:none;display:block;margin-bottom:28px;transition:border-color 0.2s;'
+
+      var btn = document.createElement('button')
+      btn.textContent = 'Enter'
+      btn.style.cssText = 'background:none;border:1px solid rgba(184,115,51,0.45);color:#b87333;font-family:"Courier Prime",monospace;font-size:12px;letter-spacing:0.18em;text-transform:uppercase;padding:12px 36px;cursor:pointer;'
+
+      var errorEl = document.createElement('div')
+      errorEl.style.cssText = 'font-family:"DM Sans",sans-serif;font-size:12px;color:rgba(184,115,51,0.65);margin-top:14px;min-height:1.4em;'
+
+      inner.appendChild(eyebrow)
+      inner.appendChild(heading)
+      inner.appendChild(codeInput)
+      inner.appendChild(btn)
+      inner.appendChild(errorEl)
+      overlay.appendChild(inner)
+      document.body.appendChild(overlay)
+      setTimeout(function() { codeInput.focus() }, 60)
+
+      function submit() {
+        var code = codeInput.value
+        if (!code) return
+        btn.disabled = true
+        errorEl.textContent = ''
+        fetch('/api/admin-auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: code }),
+        })
+        .then(function(r) { return r.json() })
+        .then(function(data) {
+          if (data.ok) {
+            sessionStorage.setItem('admin_verified', 'true')
+            sessionStorage.setItem('orbit_admin_code', code)
+            var url = new URL(location.href)
+            url.searchParams.delete('code')
+            location.replace(url.toString())
+          } else {
+            codeInput.style.animation = 'none'
+            void codeInput.offsetHeight
+            codeInput.style.animation = 'aco-shake 0.35s ease'
+            errorEl.textContent = 'Invalid code.'
+            codeInput.value = ''
+            codeInput.focus()
+            btn.disabled = false
+          }
+        })
+        .catch(function() {
+          errorEl.textContent = 'Connection error. Try again.'
+          btn.disabled = false
+        })
+      }
+
+      btn.addEventListener('click', submit)
+      codeInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') submit() })
     })()
 
     // Guest mode: ?guest=true limits to 1 search + 1 suggest then captures email
@@ -808,90 +933,183 @@
     let adminLoaded = false
     async function initAdminView() {
       if (adminLoaded) return
+      adminLoaded = true
       const container = document.getElementById('admin-view')
-      const wrap = document.createElement('div')
-      wrap.className = 'admin-wrap'
+      container.innerHTML = ''
+
+      const layout = document.createElement('div')
+      layout.className = 'admin-layout'
+
+      const leftEl = document.createElement('div')
+      leftEl.className = 'admin-left'
 
       const eyebrow = document.createElement('div')
       eyebrow.className = 'admin-eyebrow'
       eyebrow.textContent = 'ORBIT — ADMIN'
 
-      const headline = document.createElement('div')
-      headline.className = 'admin-headline'
-      headline.textContent = 'Gravity Profiles'
+      const statusEl = document.createElement('div')
+      statusEl.className = 'admin-status'
+      statusEl.textContent = 'Loading…'
 
-      const status = document.createElement('div')
-      status.className = 'admin-status'
-      status.textContent = 'Loading profiles…'
+      leftEl.appendChild(eyebrow)
+      leftEl.appendChild(statusEl)
 
-      wrap.appendChild(eyebrow)
-      wrap.appendChild(headline)
-      wrap.appendChild(status)
-      container.appendChild(wrap)
+      const rightEl = document.createElement('div')
+      rightEl.className = 'admin-right'
+
+      const emptyEl = document.createElement('div')
+      emptyEl.className = 'admin-empty'
+      emptyEl.textContent = 'Select a profile.'
+      rightEl.appendChild(emptyEl)
+
+      layout.appendChild(leftEl)
+      layout.appendChild(rightEl)
+      container.appendChild(layout)
 
       try {
-        const params = new URLSearchParams(location.search)
-        const code = params.get('code') || ''
-        const r = await fetch(`/api/admin-auth?code=${encodeURIComponent(code)}`)
+        const code = sessionStorage.getItem('orbit_admin_code') || ''
+        const r = await fetch(`/api/admin-auth?action=list&code=${encodeURIComponent(code)}`)
         if (!r.ok) throw new Error('Unauthorized')
         const { profiles } = await r.json()
-        status.textContent = ''
-        wrap.appendChild(buildAdminTable(profiles))
-        const count = document.createElement('div')
-        count.className = 'admin-count'
-        count.textContent = `${profiles.length} gravity profile${profiles.length === 1 ? '' : 's'} in orbit.`
-        wrap.appendChild(count)
-        adminLoaded = true
+        statusEl.remove()
+
+        const countEl = document.createElement('div')
+        countEl.className = 'admin-count'
+        countEl.textContent = `${profiles.length} gravity profile${profiles.length === 1 ? '' : 's'}`
+        leftEl.appendChild(countEl)
+
+        profiles.forEach(p => {
+          const row = document.createElement('div')
+          row.className = 'admin-row'
+
+          const nameEl = document.createElement('div')
+          nameEl.className = 'admin-row-name'
+          nameEl.textContent = p.name || '—'
+
+          const metaParts = []
+          if (p.email) metaParts.push(p.email)
+          if (p.created_at) metaParts.push(new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }))
+          const metaEl = document.createElement('div')
+          metaEl.className = 'admin-row-meta'
+          metaEl.textContent = metaParts.join(' · ')
+
+          row.appendChild(nameEl)
+          if (metaParts.length) row.appendChild(metaEl)
+          if (p.mission) {
+            const missionEl = document.createElement('div')
+            missionEl.className = 'admin-row-mission'
+            missionEl.textContent = p.mission.length > 60 ? p.mission.slice(0, 60) + '…' : p.mission
+            row.appendChild(missionEl)
+          }
+
+          row.addEventListener('click', () => {
+            document.querySelectorAll('.admin-row').forEach(r => r.classList.remove('selected'))
+            row.classList.add('selected')
+            loadAdminProfile(p.sessionId, rightEl)
+          })
+          leftEl.appendChild(row)
+        })
       } catch {
-        status.textContent = 'Failed to load profiles.'
+        statusEl.textContent = 'Failed to load profiles.'
       }
     }
 
-    function buildAdminTable(profiles) {
-      const table = document.createElement('table')
-      table.className = 'admin-table'
+    async function loadAdminProfile(sessionId, rightEl) {
+      rightEl.innerHTML = ''
+      const loadingEl = document.createElement('div')
+      loadingEl.className = 'admin-empty'
+      loadingEl.textContent = 'Loading…'
+      rightEl.appendChild(loadingEl)
 
-      const thead = document.createElement('thead')
-      const hrow = document.createElement('tr')
-      ;['Name', 'Email', 'Mission', 'Session ID', 'Created'].forEach(col => {
-        const th = document.createElement('th')
-        th.textContent = col
-        hrow.appendChild(th)
-      })
-      thead.appendChild(hrow)
-      table.appendChild(thead)
+      try {
+        const [idRes, cRes] = await Promise.all([
+          fetch(`/api/identity?sessionId=${encodeURIComponent(sessionId)}`),
+          fetch(`/api/contacts-kv?sessionId=${encodeURIComponent(sessionId)}`),
+        ])
+        const identity = idRes.ok ? await idRes.json() : {}
+        const contacts = cRes.ok ? await cRes.json() : []
+        rightEl.innerHTML = ''
 
-      const tbody = document.createElement('tbody')
-      profiles.forEach(p => {
-        const tr = document.createElement('tr')
+        const eyebrow = document.createElement('div')
+        eyebrow.className = 'admin-detail-eyebrow'
+        eyebrow.textContent = 'ORBIT — GRAVITY PROFILE'
 
-        const tdName = document.createElement('td')
-        tdName.className = 'admin-cell-name'
-        tdName.textContent = p.name || '—'
+        const nameEl = document.createElement('div')
+        nameEl.className = 'admin-detail-name'
+        nameEl.textContent = identity.name || '—'
 
-        const tdEmail = document.createElement('td')
-        tdEmail.textContent = p.email || '—'
+        rightEl.appendChild(eyebrow)
+        rightEl.appendChild(nameEl)
 
-        const tdMission = document.createElement('td')
-        tdMission.textContent = p.mission ? (p.mission.length > 80 ? p.mission.slice(0, 80) + '…' : p.mission) : '—'
+        const fields = [
+          { label: 'Email',              value: identity.email || '—',                                                                    mono: true  },
+          { label: 'Mission',            value: identity.mission || '—'                                                                               },
+          { label: 'Desired reputation', value: Array.isArray(identity.north_stars) ? identity.north_stars.join(', ') : (identity.north_stars || '—') },
+          { label: 'Thinking partner',   value: identity.worldview || '—'                                                                             },
+          { label: 'EWS story',          value: identity.ews_story || '—'                                                                             },
+          { label: 'Session ID',         value: sessionId,                                                                                mono: true  },
+        ]
+        fields.forEach(f => {
+          const fieldEl = document.createElement('div')
+          fieldEl.className = 'admin-detail-field'
+          const labelEl = document.createElement('div')
+          labelEl.className = 'admin-detail-label'
+          labelEl.textContent = f.label
+          const valueEl = document.createElement('div')
+          valueEl.className = 'admin-detail-value' + (f.mono ? ' mono' : '')
+          valueEl.textContent = f.value
+          fieldEl.appendChild(labelEl)
+          fieldEl.appendChild(valueEl)
+          rightEl.appendChild(fieldEl)
+        })
 
-        const tdSession = document.createElement('td')
-        tdSession.className = 'admin-cell-mono'
-        tdSession.textContent = p.sessionId ? p.sessionId.slice(0, 8) + '…' : '—'
+        const contactsHeading = document.createElement('div')
+        contactsHeading.className = 'admin-contacts-heading'
+        contactsHeading.textContent = `Orbit — ${Array.isArray(contacts) ? contacts.length : 0} contact${contacts.length === 1 ? '' : 's'}`
+        rightEl.appendChild(contactsHeading)
 
-        const tdCreated = document.createElement('td')
-        tdCreated.className = 'admin-cell-mono'
-        tdCreated.textContent = p.created_at ? new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
+        if (!Array.isArray(contacts) || contacts.length === 0) {
+          const emptyEl = document.createElement('div')
+          emptyEl.style.cssText = 'font-family:"DM Sans",sans-serif;font-size:13px;color:rgba(240,236,228,0.25);padding:12px 0;'
+          emptyEl.textContent = 'No contacts in orbit yet.'
+          rightEl.appendChild(emptyEl)
+        } else {
+          contacts.forEach(c => {
+            const row = document.createElement('div')
+            row.className = 'admin-contact-row'
 
-        tr.appendChild(tdName)
-        tr.appendChild(tdEmail)
-        tr.appendChild(tdMission)
-        tr.appendChild(tdSession)
-        tr.appendChild(tdCreated)
-        tbody.appendChild(tr)
-      })
-      table.appendChild(tbody)
-      return table
+            const cName = document.createElement('div')
+            cName.className = 'admin-contact-name'
+            cName.textContent = c.name || '—'
+
+            const roleParts = []
+            if (c.role) roleParts.push(c.role)
+            if (c.date_added) roleParts.push(new Date(c.date_added).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }))
+            if (roleParts.length) {
+              const roleEl = document.createElement('div')
+              roleEl.className = 'admin-contact-role'
+              roleEl.textContent = roleParts.join(' · ')
+              row.appendChild(cName)
+              row.appendChild(roleEl)
+            } else {
+              row.appendChild(cName)
+            }
+
+            const stageEl = document.createElement('span')
+            stageEl.className = 'admin-contact-stage'
+            stageEl.textContent = c.status || 'IDENTIFIED'
+            row.appendChild(stageEl)
+
+            rightEl.appendChild(row)
+          })
+        }
+      } catch {
+        rightEl.innerHTML = ''
+        const errEl = document.createElement('div')
+        errEl.className = 'admin-empty'
+        errEl.textContent = 'Failed to load profile.'
+        rightEl.appendChild(errEl)
+      }
     }
   </script>
 
