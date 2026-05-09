@@ -1,5 +1,6 @@
 import { OrbitCanvas } from './orbit-canvas.js'
 import { SidePanel } from './side-panel.js'
+import { EVENTS } from '../shared/events.js'
 
 function injectStyles() {
   if (document.getElementById('orbit-view-styles')) return
@@ -42,6 +43,81 @@ function injectStyles() {
   `
   document.head.appendChild(s)
 }
+
+// ── Persistence helpers ──────────────────────────────────────────────────────
+
+const LS_KEY     = 'orbit_contacts'
+const LS_PENDING = 'orbit_pending'
+
+const ls = {
+  read:   ()           => { try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]') } catch { return [] } },
+  write:  (cs)         => { try { localStorage.setItem(LS_KEY, JSON.stringify(cs)) } catch {} },
+  update: (id, fields) => {
+    const cs = ls.read()
+    const i  = cs.findIndex(c => c.id === id)
+    if (i >= 0) { cs[i] = { ...cs[i], ...fields }; ls.write(cs) }
+  },
+}
+
+const pending = {
+  read:  ()    => { try { return JSON.parse(localStorage.getItem(LS_PENDING) || '[]') } catch { return [] } },
+  add:   (op)  => { const ops = pending.read(); ops.push(op); try { localStorage.setItem(LS_PENDING, JSON.stringify(ops)) } catch {} },
+  clear: ()    => { try { localStorage.removeItem(LS_PENDING) } catch {} },
+}
+
+async function sheetsGet() {
+  const r = await fetch('/api/sheets')
+  if (!r.ok) throw new Error(`sheets GET ${r.status}`)
+  return r.json()
+}
+
+async function sheetsPost(contact) {
+  const r = await fetch('/api/sheets', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(contact),
+  })
+  if (!r.ok) throw new Error(`sheets POST ${r.status}`)
+}
+
+async function sheetsPatch(id, fields) {
+  const r = await fetch('/api/sheets', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, fields }),
+  })
+  if (!r.ok) throw new Error(`sheets PATCH ${r.status}`)
+}
+
+// Apply pending ops onto a contacts array so local state stays coherent
+// while flush runs in the background
+function applyPending(contacts, ops) {
+  let cs = [...contacts]
+  for (const op of ops) {
+    if (op.type === 'add'   && !cs.find(c => c.id === op.contact.id)) cs.push(op.contact)
+    if (op.type === 'patch') cs = cs.map(c => c.id === op.id ? { ...c, ...op.fields } : c)
+  }
+  return cs
+}
+
+async function flushPending() {
+  const ops = pending.read()
+  if (ops.length === 0) return
+  const failed = []
+  for (const op of ops) {
+    try {
+      if (op.type === 'add')   await sheetsPost(op.contact)
+      if (op.type === 'patch') await sheetsPatch(op.id, op.fields)
+    } catch { failed.push(op) }
+  }
+  if (failed.length > 0) {
+    try { localStorage.setItem(LS_PENDING, JSON.stringify(failed)) } catch {}
+  } else {
+    pending.clear()
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
 
 async function init() {
   const container = document.getElementById('orbit-view')
@@ -97,6 +173,70 @@ async function init() {
   document.addEventListener('orbit:notes-updated', e => {
     const { id, notes } = e.detail
     contacts = contacts.map(c => c.name === id ? { ...c, notes } : c)
+  })
+
+  // ── Sheets: load real data on mount, fall back to localStorage ────
+  ;(async () => {
+    try {
+      const remote = await sheetsGet()
+      const ops    = pending.read()
+      const merged = ops.length > 0 ? applyPending(remote, ops) : remote
+      if (merged.length > 0) {
+        contacts = merged
+        ls.write(contacts)
+        canvas.update(contacts)
+        updateProgress(contacts)
+      }
+      // Flush any writes that failed in previous sessions
+      if (ops.length > 0) flushPending().catch(() => {})
+    } catch {
+      const stored = ls.read()
+      if (stored.length > 0) {
+        contacts = stored
+        canvas.update(contacts)
+        updateProgress(contacts)
+      }
+    }
+  })()
+
+  // ── CONTACT_ADDED: canvas + Sheets ───────────────────────────────
+  document.addEventListener(EVENTS.CONTACT_ADDED, async e => {
+    const contact = e.detail
+    contacts = [...contacts, contact]
+    ls.write(contacts)
+    canvas.update(contacts)
+    updateProgress(contacts)
+    try {
+      await sheetsPost(contact)
+    } catch {
+      pending.add({ type: 'add', contact })
+    }
+  })
+
+  // ── STAGE_CHANGED: Sheets sync (local state handled above) ───────
+  document.addEventListener(EVENTS.STAGE_CHANGED, async e => {
+    const { id, newStatus } = e.detail
+    const contact = contacts.find(c => c.name === id)
+    if (!contact?.id) return
+    ls.update(contact.id, { status: newStatus })
+    try {
+      await sheetsPatch(contact.id, { status: newStatus })
+    } catch {
+      pending.add({ type: 'patch', id: contact.id, fields: { status: newStatus } })
+    }
+  })
+
+  // ── NOTES_UPDATED: Sheets sync ───────────────────────────────────
+  document.addEventListener(EVENTS.NOTES_UPDATED, async e => {
+    const { id, notes } = e.detail
+    const contact = contacts.find(c => c.name === id)
+    if (!contact?.id) return
+    ls.update(contact.id, { notes })
+    try {
+      await sheetsPatch(contact.id, { notes })
+    } catch {
+      pending.add({ type: 'patch', id: contact.id, fields: { notes } })
+    }
   })
 }
 

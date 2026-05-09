@@ -20,5 +20,7 @@ export const CONTACT_NODE = {
   date_added: "",
   source: "",
   search_hash: "",
-  created_at: ""
+  created_at: "",
+  id: "",              // crypto.randomUUID() on creation
+  interaction_log: [] // reserved for future use
 }
