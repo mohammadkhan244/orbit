@@ -44,12 +44,14 @@ export default async function handler(req, res) {
       messages: [{ role: 'user', content: 'Find proactive suggestions as instructed.' }],
     })
 
-    const text = response.content
+    const raw = response.content
       .filter(b => b.type === 'text')
       .map(b => b.text)
       .join('')
-    const clean = text.replace(/```json|```/g, '').trim()
-    const parsed = JSON.parse(clean)
+
+    const match = raw.match(/\{[\s\S]*\}/)
+    if (!match) throw new Error('No JSON found in response')
+    const parsed = JSON.parse(match[0])
 
     return res.status(200).json({ ...parsed, search_hash })
   } catch (err) {
