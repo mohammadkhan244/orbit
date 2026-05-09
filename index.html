@@ -398,6 +398,8 @@
     }
     .admin-row:hover { background: rgba(184,115,51,0.05); padding: 14px 8px; margin: 0 -8px; }
     .admin-row.selected { background: rgba(184,115,51,0.09); padding: 14px 8px; margin: 0 -8px; }
+    .admin-row.admin-self { border-left: 2px solid rgba(184,115,51,0.45); padding-left: 10px; }
+    .admin-row.admin-self .admin-row-name { color: #b87333; }
     .admin-row-name {
       font-family: 'Courier Prime', monospace;
       font-size: 13px; color: #f0ece4;
@@ -980,7 +982,7 @@
 
         profiles.forEach(p => {
           const row = document.createElement('div')
-          row.className = 'admin-row'
+          row.className = 'admin-row' + (p.sessionId === 'admin' ? ' admin-self' : '')
 
           const nameEl = document.createElement('div')
           nameEl.className = 'admin-row-name'
@@ -1022,9 +1024,10 @@
       rightEl.appendChild(loadingEl)
 
       try {
+        const code = sessionStorage.getItem('orbit_admin_code') || ''
         const [idRes, cRes] = await Promise.all([
           fetch(`/api/identity?sessionId=${encodeURIComponent(sessionId)}`),
-          fetch(`/api/contacts-kv?sessionId=${encodeURIComponent(sessionId)}`),
+          fetch(`/api/admin-auth?action=contacts&sessionId=${encodeURIComponent(sessionId)}&code=${encodeURIComponent(code)}`),
         ])
         const identity = idRes.ok ? await idRes.json() : {}
         const contacts = cRes.ok ? await cRes.json() : []
@@ -1062,6 +1065,15 @@
           fieldEl.appendChild(valueEl)
           rightEl.appendChild(fieldEl)
         })
+
+        if (sessionId === 'admin') {
+          const editBtn = document.createElement('button')
+          editBtn.className = 'gp-save'
+          editBtn.style.marginTop = '8px'
+          editBtn.textContent = 'Edit Profile'
+          editBtn.addEventListener('click', () => window.showGravityProfile?.())
+          rightEl.appendChild(editBtn)
+        }
 
         const contactsHeading = document.createElement('div')
         contactsHeading.className = 'admin-contacts-heading'

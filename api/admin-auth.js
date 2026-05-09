@@ -12,17 +12,30 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end()
 
   if (req.method === 'GET') {
-    const { code } = req.query
+    const { code, action, sessionId } = req.query
     if (code !== process.env.ORBIT_ADMIN_CODE) return res.status(401).json({ error: 'Unauthorized' })
+
+    if (action === 'contacts') {
+      if (!sessionId) return res.status(400).json({ error: 'sessionId required' })
+      try {
+        const contacts = await kv.get(`orbit:contacts:${sessionId}`)
+        return res.status(200).json(contacts || [])
+      } catch (err) {
+        console.error('[admin-auth] contacts GET failed', err)
+        return res.status(502).json({ error: 'KV unavailable', detail: err.message })
+      }
+    }
+
+    // action=list (default)
     try {
       const keys = await kv.keys('orbit:identity:*')
       const profiles = await Promise.all(
         keys.map(async key => {
           const identity = await kv.get(key)
           if (!identity) return null
-          const sessionId = key.replace('orbit:identity:', '')
+          const sid = key.replace('orbit:identity:', '')
           return {
-            sessionId,
+            sessionId:  sid,
             name:       identity.name       || '',
             email:      identity.email      || '',
             mission:    identity.mission    || '',
