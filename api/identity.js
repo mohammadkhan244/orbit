@@ -29,7 +29,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'POST') {
-    const { sessionId, identity, sendWelcome } = req.body ?? {}
+    const { sessionId, identity, sendWelcome, sendUpdate } = req.body ?? {}
     if (!sessionId || !identity) return res.status(400).json({ error: 'sessionId and identity required' })
     try {
       await kv.set(`orbit:identity:${sessionId}`, identity, { ex: TTL })
@@ -48,6 +48,22 @@ export default async function handler(req, res) {
           subject: `New gravity profile: ${name} — ${identity.email}`,
           text: `Name: ${name}\nEmail: ${identity.email}\nMission: ${identity.mission || '—'}\nSession: ${sessionId}`,
         }).catch(err => console.error('[identity] notification email failed', err))
+      }
+
+      if (sendUpdate && identity.email && identity.email.includes('@')) {
+        const name = identity.name || 'there'
+        resend.emails.send({
+          from: 'orbit@modernmyths.co',
+          to: identity.email,
+          subject: 'Your gravity profile has been updated.',
+          text: `Hi ${name},\n\nYour gravity profile has been updated.\n\nName: ${name}\nMission: ${identity.mission || '—'}\nThinking partner: ${identity.worldview || '—'}\n\n— ORBIT`,
+        }).catch(err => console.error('[identity] update email (user) failed', err))
+        resend.emails.send({
+          from: 'orbit@modernmyths.co',
+          to: 'mohammad@modernmyths.co',
+          subject: `Profile updated: ${name} — ${identity.email}`,
+          text: `Name: ${name}\nEmail: ${identity.email}\nMission: ${identity.mission || '—'}\nSession: ${sessionId}`,
+        }).catch(err => console.error('[identity] update email (notify) failed', err))
       }
 
       return res.status(200).json({ ok: true })

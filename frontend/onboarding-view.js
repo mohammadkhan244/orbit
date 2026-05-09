@@ -360,6 +360,7 @@ function buildForm() {
       email:       inputs.email.value.trim(),
       voice:       '',
       ews_story:   '',
+      created_at:  new Date().toISOString(),
     }
 
     setIdentity(identity)

@@ -361,6 +361,71 @@
       text-transform: uppercase;
       user-select: none;
     }
+
+    /* ── ADMIN VIEW ── */
+    #admin-view { padding: 40px 32px; overflow-y: auto; }
+    .admin-wrap { max-width: 900px; margin: 0 auto; }
+    .admin-eyebrow {
+      font-family: 'Courier Prime', monospace;
+      font-size: 10px; letter-spacing: 0.24em;
+      color: rgba(184,115,51,0.5);
+      text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+    .admin-headline {
+      font-family: 'Courier Prime', monospace;
+      font-size: 22px; font-weight: 400;
+      color: rgba(240,236,228,0.72);
+      line-height: 1.4;
+      margin-bottom: 36px;
+    }
+    .admin-status {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px; color: rgba(240,236,228,0.35);
+      margin-bottom: 24px; min-height: 1.4em;
+    }
+    .admin-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 32px;
+    }
+    .admin-table th {
+      font-family: 'Courier Prime', monospace;
+      font-size: 9px; letter-spacing: 0.18em;
+      color: rgba(184,115,51,0.65);
+      text-transform: uppercase;
+      text-align: left;
+      padding: 0 16px 14px 0;
+      border-bottom: 1px solid rgba(184,115,51,0.18);
+    }
+    .admin-table td {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px; color: rgba(240,236,228,0.75);
+      padding: 14px 16px 14px 0;
+      border-bottom: 1px solid rgba(184,115,51,0.07);
+      vertical-align: top;
+      line-height: 1.5;
+    }
+    .admin-table tr:last-child td { border-bottom: none; }
+    .admin-cell-mono {
+      font-family: 'Courier Prime', monospace;
+      font-size: 11px; color: rgba(240,236,228,0.4);
+    }
+    .admin-cell-name {
+      font-family: 'Courier Prime', monospace;
+      font-size: 13px; color: #f0ece4;
+    }
+    .admin-count {
+      font-family: 'Courier Prime', monospace;
+      font-size: 11px; letter-spacing: 0.14em;
+      color: rgba(184,115,51,0.55);
+      text-transform: uppercase;
+      margin-top: 8px;
+    }
+    @media (max-width: 700px) {
+      #admin-view { padding: 24px 16px; }
+      .admin-table th, .admin-table td { padding-right: 10px; font-size: 12px; }
+    }
   </style>
 </head>
 <body>
@@ -379,6 +444,7 @@
       <li><a data-view="orbit"  class="active">ORBIT</a></li>
       <li><a data-view="search">SEARCH</a></li>
       <li><a data-view="suggest">SUGGEST</a></li>
+      <li><a data-view="admin" id="admin-nav-link" hidden>ADMIN</a></li>
       <li><button id="gravity-profile-link">Gravity Profile</button></li>
     </ul>
     <span id="admin-badge" hidden>ADMIN</span>
@@ -388,6 +454,7 @@
     <div id="orbit-view"  class="view active"></div>
     <div id="search-view"  class="view"></div>
     <div id="suggest-view" class="view"></div>
+    <div id="admin-view"   class="view"></div>
   </main>
 
   <script>
@@ -401,6 +468,7 @@
       if (sessionStorage.getItem('admin_verified') === 'true') {
         window.ORBIT_ADMIN = true
         document.getElementById('admin-badge').hidden = false
+        document.getElementById('admin-nav-link').hidden = false
         console.log('[ORBIT ADMIN] Admin mode active')
         return
       }
@@ -466,6 +534,7 @@
         { key: 'mission',     label: 'What are you working on?',                           placeholder: '2–3 sentences.',                              type: 'textarea' },
         { key: 'north_stars', label: 'What do you want to be known for?',                 placeholder: 'The work, the idea, the reputation.',          type: 'input'    },
         { key: 'worldview',   label: 'What kind of thinking partner are you looking for?', placeholder: 'Someone who can challenge, co-think, build.',  type: 'textarea' },
+        { key: 'email',       label: 'Your email (optional)',                              placeholder: 'For saving your orbit across devices',         type: 'email'    },
       ]
 
       var inputs = {}
@@ -484,6 +553,7 @@
         input.className = f.type === 'textarea' ? 'gp-textarea' : 'gp-input'
         input.placeholder = f.placeholder
         if (f.type === 'textarea') input.rows = 3
+        if (f.type === 'email') input.type = 'email'
         if (f.key === 'north_stars') {
           var ns = identity.north_stars
           input.value = Array.isArray(ns) ? ns.join(', ') : (ns || '')
@@ -514,18 +584,21 @@
           saveBtn.textContent = 'Saving...'
           errorEl.textContent = ''
           var northRaw = inputs.north_stars.value.trim()
+          var newEmail = inputs.email.value.trim()
           var updated = Object.assign({}, identity, {
             name: name, mission: mission,
             north_stars: northRaw ? [northRaw] : [],
             worldview: inputs.worldview.value.trim(),
+            email: newEmail,
           })
+          var emailChanged = newEmail && newEmail !== (identity.email || '')
           window.ORBIT_IDENTITY = updated
           try { localStorage.setItem('orbit_identity', JSON.stringify(updated)) } catch {}
           if (sessionId) {
             try {
               await fetch('/api/identity', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sessionId: sessionId, identity: updated }),
+                body: JSON.stringify({ sessionId: sessionId, identity: updated, sendUpdate: emailChanged }),
               })
             } catch {}
           }
@@ -724,12 +797,102 @@
       link.addEventListener('click', e => {
         e.preventDefault()
         activate(link.dataset.view)
+        if (link.dataset.view === 'admin' && window.ORBIT_ADMIN) initAdminView()
       })
     })
 
     document.getElementById('gravity-profile-link')?.addEventListener('click', () => {
       window.showGravityProfile?.()
     })
+
+    let adminLoaded = false
+    async function initAdminView() {
+      if (adminLoaded) return
+      const container = document.getElementById('admin-view')
+      const wrap = document.createElement('div')
+      wrap.className = 'admin-wrap'
+
+      const eyebrow = document.createElement('div')
+      eyebrow.className = 'admin-eyebrow'
+      eyebrow.textContent = 'ORBIT — ADMIN'
+
+      const headline = document.createElement('div')
+      headline.className = 'admin-headline'
+      headline.textContent = 'Gravity Profiles'
+
+      const status = document.createElement('div')
+      status.className = 'admin-status'
+      status.textContent = 'Loading profiles…'
+
+      wrap.appendChild(eyebrow)
+      wrap.appendChild(headline)
+      wrap.appendChild(status)
+      container.appendChild(wrap)
+
+      try {
+        const params = new URLSearchParams(location.search)
+        const code = params.get('code') || ''
+        const r = await fetch(`/api/admin-auth?code=${encodeURIComponent(code)}`)
+        if (!r.ok) throw new Error('Unauthorized')
+        const { profiles } = await r.json()
+        status.textContent = ''
+        wrap.appendChild(buildAdminTable(profiles))
+        const count = document.createElement('div')
+        count.className = 'admin-count'
+        count.textContent = `${profiles.length} gravity profile${profiles.length === 1 ? '' : 's'} in orbit.`
+        wrap.appendChild(count)
+        adminLoaded = true
+      } catch {
+        status.textContent = 'Failed to load profiles.'
+      }
+    }
+
+    function buildAdminTable(profiles) {
+      const table = document.createElement('table')
+      table.className = 'admin-table'
+
+      const thead = document.createElement('thead')
+      const hrow = document.createElement('tr')
+      ;['Name', 'Email', 'Mission', 'Session ID', 'Created'].forEach(col => {
+        const th = document.createElement('th')
+        th.textContent = col
+        hrow.appendChild(th)
+      })
+      thead.appendChild(hrow)
+      table.appendChild(thead)
+
+      const tbody = document.createElement('tbody')
+      profiles.forEach(p => {
+        const tr = document.createElement('tr')
+
+        const tdName = document.createElement('td')
+        tdName.className = 'admin-cell-name'
+        tdName.textContent = p.name || '—'
+
+        const tdEmail = document.createElement('td')
+        tdEmail.textContent = p.email || '—'
+
+        const tdMission = document.createElement('td')
+        tdMission.textContent = p.mission ? (p.mission.length > 80 ? p.mission.slice(0, 80) + '…' : p.mission) : '—'
+
+        const tdSession = document.createElement('td')
+        tdSession.className = 'admin-cell-mono'
+        tdSession.textContent = p.sessionId ? p.sessionId.slice(0, 8) + '…' : '—'
+
+        const tdCreated = document.createElement('td')
+        tdCreated.className = 'admin-cell-mono'
+        tdCreated.textContent = p.created_at ? new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
+
+        tr.appendChild(tdName)
+        tr.appendChild(tdEmail)
+        tr.appendChild(tdMission)
+        tr.appendChild(tdSession)
+        tr.appendChild(tdCreated)
+        tbody.appendChild(tr)
+      })
+      table.appendChild(tbody)
+      return table
+    }
   </script>
 
   <script type="module" src="/frontend/onboarding-view.js"></script>

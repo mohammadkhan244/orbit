@@ -1,12 +1,49 @@
+import { createClient } from '@vercel/kv'
+
+const kv = createClient({
+  url: process.env.orbit_KV_REST_API_URL,
+  token: process.env.orbit_KV_REST_API_TOKEN,
+})
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
   if (req.method === 'OPTIONS') return res.status(200).end()
-  if (req.method !== 'POST') return res.status(405).end()
-  const { code } = req.body ?? {}
-  if (code === process.env.ORBIT_ADMIN_CODE) {
-    return res.status(200).json({ ok: true })
+
+  if (req.method === 'GET') {
+    const { code } = req.query
+    if (code !== process.env.ORBIT_ADMIN_CODE) return res.status(401).json({ error: 'Unauthorized' })
+    try {
+      const keys = await kv.keys('orbit:identity:*')
+      const profiles = await Promise.all(
+        keys.map(async key => {
+          const identity = await kv.get(key)
+          if (!identity) return null
+          const sessionId = key.replace('orbit:identity:', '')
+          return {
+            sessionId,
+            name:       identity.name       || '',
+            email:      identity.email      || '',
+            mission:    identity.mission    || '',
+            created_at: identity.created_at || null,
+          }
+        })
+      )
+      return res.status(200).json({ profiles: profiles.filter(Boolean) })
+    } catch (err) {
+      console.error('[admin-auth] GET failed', err)
+      return res.status(502).json({ error: 'KV unavailable', detail: err.message })
+    }
   }
-  return res.status(401).json({ ok: false })
+
+  if (req.method === 'POST') {
+    const { code } = req.body ?? {}
+    if (code === process.env.ORBIT_ADMIN_CODE) {
+      return res.status(200).json({ ok: true })
+    }
+    return res.status(401).json({ ok: false })
+  }
+
+  return res.status(405).end()
 }
