@@ -34,6 +34,7 @@ export default async function handler(req, res) {
   const identityPack = { ...IDENTITY_PACK, ews_story: ewsStory || IDENTITY_PACK.ews_story }
   const systemPrompt = SUGGEST_SYSTEM_PROMPT
     .replace('[IDENTITY_PACK]', JSON.stringify(identityPack, null, 2))
+    .replace('[EWS_STORY]', ewsStory || '')
 
   try {
     const response = await client.messages.create({

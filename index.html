@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/svg+xml" href="/public/favicon.svg">
 
   <style>
     :root {
@@ -116,6 +117,73 @@
     #search-view { padding: 40px 32px; }
     #suggest-view { padding: 40px 32px; }
 
+    @media (max-width: 700px) {
+      #search-view, #suggest-view { padding: 24px 0; }
+    }
+
+    /* ── MOBILE NAV ── */
+    @media (max-width: 480px) {
+      nav { padding: 0 16px; }
+      .nav-links { gap: 14px; }
+      .nav-links a { font-size: 10px; letter-spacing: 0.1em; }
+    }
+    @media (max-width: 340px) {
+      .nav-wordmark { display: none; }
+    }
+
+    /* ── GUEST MODAL ── */
+    .guest-modal-overlay {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(10,10,10,0.96);
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .guest-modal-card {
+      max-width: 420px; width: 100%;
+      border: 1px solid rgba(184,115,51,0.5);
+      padding: 40px 36px;
+      background: #0a0a0a;
+    }
+    .guest-modal-eyebrow {
+      font-family: 'Courier Prime', monospace;
+      font-size: 10px; letter-spacing: 0.2em;
+      color: rgba(184,115,51,0.6);
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .guest-modal-msg {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px; color: rgba(240,236,228,0.75);
+      line-height: 1.65; margin-bottom: 28px;
+    }
+    .guest-modal-input {
+      width: 100%; background: transparent;
+      border: none; border-bottom: 1px solid rgba(184,115,51,0.35);
+      color: #f0ece4; font-family: 'DM Sans', sans-serif;
+      font-size: 15px; padding: 8px 0 12px;
+      outline: none; margin-bottom: 20px;
+      transition: border-color 0.2s ease; display: block;
+    }
+    .guest-modal-input:focus { border-bottom-color: #b87333; }
+    .guest-modal-input::placeholder { color: rgba(240,236,228,0.2); }
+    .guest-modal-btn {
+      background: none; border: 1px solid rgba(184,115,51,0.5);
+      color: #b87333; font-family: 'Courier Prime', monospace;
+      font-size: 12px; letter-spacing: 0.18em;
+      text-transform: uppercase; padding: 10px 28px;
+      cursor: pointer; transition: all 0.15s ease;
+    }
+    .guest-modal-btn:hover:not(:disabled) {
+      background: rgba(184,115,51,0.1);
+      border-color: #b87333; color: #f0ece4;
+    }
+    .guest-modal-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .guest-modal-status {
+      font-family: 'Courier Prime', monospace;
+      font-size: 11px; color: rgba(184,115,51,0.65);
+      letter-spacing: 0.1em; margin-top: 14px; min-height: 1.4em;
+    }
+
     /* ── ADMIN BADGE ── */
     #admin-badge {
       font-family: 'Courier Prime', monospace;
@@ -154,6 +222,69 @@
     if (window.ORBIT_ADMIN) {
       document.getElementById('admin-badge').hidden = false
       console.log('[ORBIT ADMIN] Admin mode active — logging all API calls and events')
+    }
+
+    // Guest mode: ?guest=true limits to 1 search + 1 suggest then captures email
+    window.ORBIT_GUEST = new URLSearchParams(location.search).get('guest') === 'true'
+
+    window.showGuestModal = function() {
+      if (document.getElementById('guest-modal')) return
+
+      const overlay = document.createElement('div')
+      overlay.id = 'guest-modal'
+      overlay.className = 'guest-modal-overlay'
+
+      const card = document.createElement('div')
+      card.className = 'guest-modal-card'
+
+      const eyebrow = document.createElement('div')
+      eyebrow.className = 'guest-modal-eyebrow'
+      eyebrow.textContent = 'ORBIT'
+
+      const msg = document.createElement('p')
+      msg.className = 'guest-modal-msg'
+      msg.textContent = 'This tool is still under development. If you\'d like access when it\'s ready, leave your email — your orbit will be waiting for you exactly where you left off.'
+
+      const input = document.createElement('input')
+      input.type = 'email'
+      input.placeholder = 'your@email.com'
+      input.className = 'guest-modal-input'
+
+      const btn = document.createElement('button')
+      btn.className = 'guest-modal-btn'
+      btn.textContent = 'Notify Me'
+
+      const status = document.createElement('div')
+      status.className = 'guest-modal-status'
+
+      btn.addEventListener('click', async () => {
+        const email = input.value.trim()
+        if (!email || !email.includes('@')) { input.focus(); return }
+        btn.disabled = true
+        btn.textContent = 'Sending...'
+        try {
+          const orbitData = JSON.parse(localStorage.getItem('orbit_contacts') || '[]')
+          await fetch('/api/guest-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, orbitData }),
+          })
+          localStorage.setItem('guest_email', email)
+          overlay.remove()
+        } catch {
+          btn.disabled = false
+          btn.textContent = 'Notify Me'
+          status.textContent = 'Something went wrong. Try again.'
+        }
+      })
+
+      card.appendChild(eyebrow)
+      card.appendChild(msg)
+      card.appendChild(input)
+      card.appendChild(btn)
+      card.appendChild(status)
+      overlay.appendChild(card)
+      document.body.appendChild(overlay)
     }
   </script>
 

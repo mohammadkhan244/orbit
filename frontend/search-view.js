@@ -89,33 +89,32 @@ function injectStyles() {
     .search-query::placeholder { color: rgba(240,236,228,0.2); }
     .search-query:focus { border-bottom-color: rgba(184,115,51,0.5); }
 
-    .ews-toggle-btn {
-      background: none; border: none;
-      color: rgba(240,236,228,0.3);
-      font-family: 'Courier Prime', monospace;
-      font-size: 11px; letter-spacing: 0.1em;
-      cursor: pointer; padding: 0;
-      margin-top: 14px; display: block;
-      text-transform: uppercase;
-      transition: color 0.15s ease;
-    }
-    .ews-toggle-btn:hover { color: rgba(184,115,51,0.65); }
+    .ews-toggle-btn { display: none; }
 
-    .ews-expand { margin-top: 10px; }
+    .ews-label {
+      display: block;
+      font-family: 'Courier Prime', monospace;
+      font-size: 11px; letter-spacing: 0.18em;
+      color: rgba(184,115,51,0.7);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .ews-expand { margin-top: 28px; }
     .ews-textarea {
       width: 100%;
       background: rgba(184,115,51,0.04);
-      border: 1px solid rgba(184,115,51,0.14);
+      border: 1px solid rgba(184,115,51,0.45);
       border-radius: 2px;
-      color: rgba(240,236,228,0.7);
+      color: rgba(240,236,228,0.85);
       font-family: 'DM Sans', sans-serif;
-      font-size: 13px; padding: 12px 14px;
-      resize: vertical; min-height: 80px;
-      outline: none; line-height: 1.55;
+      font-size: 14px; padding: 14px 16px;
+      resize: vertical; min-height: 100px;
+      outline: none; line-height: 1.6;
       transition: border-color 0.15s ease;
     }
-    .ews-textarea::placeholder { color: rgba(240,236,228,0.2); }
-    .ews-textarea:focus { border-color: rgba(184,115,51,0.32); }
+    .ews-textarea::placeholder { color: rgba(240,236,228,0.25); }
+    .ews-textarea:focus { border-color: #b87333; box-shadow: 0 0 0 1px rgba(184,115,51,0.2); }
 
     .search-actions { margin-top: 28px; display: flex; align-items: center; gap: 20px; }
 
@@ -374,12 +373,16 @@ function init() {
 
   const ewsExpand = document.createElement('div')
   ewsExpand.className = 'ews-expand'
-  ewsExpand.hidden = true
+
+  const ewsLabel = document.createElement('span')
+  ewsLabel.className = 'ews-label'
+  ewsLabel.textContent = 'Your EWS Story'
 
   const ewsArea = document.createElement('textarea')
   ewsArea.className = 'ews-textarea'
-  ewsArea.placeholder = 'Paste your EWS story for deeper, more resonant results…'
-  ewsArea.rows = 4
+  ewsArea.placeholder = 'Paste your Early Warning System story here for deeper, more personal results.'
+  ewsArea.rows = 5
+  ewsExpand.appendChild(ewsLabel)
   ewsExpand.appendChild(ewsArea)
 
   ewsBtn.addEventListener('click', () => {
@@ -462,6 +465,12 @@ function init() {
     adminPanel.hidden = true
     while (resultsEl.children.length > 1) resultsEl.removeChild(resultsEl.lastChild)
 
+    if (window.ORBIT_GUEST && localStorage.getItem('guest_search_used')) {
+      searchBtn.disabled = false
+      window.showGuestModal?.()
+      return
+    }
+
     const prog = startProgress(progressWrap, progressFill, progressMsg, SEARCH_MESSAGES)
     const body = { query, ewsStory: ewsArea.value.trim() }
     adminLog('Search request', { url: '/api/search', method: 'POST', body })
@@ -505,6 +514,7 @@ function init() {
           resultsEl.appendChild(card)
         })
         resultsEl.hidden = false
+        if (window.ORBIT_GUEST) localStorage.setItem('guest_search_used', '1')
       }
 
       if (window.ORBIT_ADMIN) {

@@ -133,6 +133,15 @@ function injectStyles() {
       border-bottom: 1px solid rgba(184,115,51,0.1);
     }
 
+    .suggest-category-header {
+      font-family: 'Courier Prime', monospace;
+      font-size: 11px; letter-spacing: 0.2em;
+      color: #b87333;
+      text-transform: uppercase;
+      padding: 32px 0 12px;
+      border-bottom: 1px solid rgba(184,115,51,0.18);
+    }
+
     @keyframes suggest-card-in {
       from { opacity: 0; transform: translateY(8px); }
       to   { opacity: 1; transform: translateY(0); }
@@ -388,6 +397,12 @@ function init() {
     adminPanel.hidden = true
     while (resultsEl.children.length > 1) resultsEl.removeChild(resultsEl.lastChild)
 
+    if (window.ORBIT_GUEST && localStorage.getItem('guest_suggest_used')) {
+      suggestBtn.disabled = false
+      window.showGuestModal?.()
+      return
+    }
+
     const prog = startProgress(progressWrap, progressFill, progressMsg, SUGGEST_MESSAGES)
     adminLog('Suggest request', { url: '/api/suggest', method: 'POST' })
     const t0 = performance.now()
@@ -424,12 +439,33 @@ function init() {
         errorEl.hidden = false
       } else {
         resultsLabel.textContent = `${people.length} suggestion${people.length === 1 ? '' : 's'}`
-        people.forEach((p, i) => {
-          const card = buildCard(p, data.search_hash)
-          card.style.animationDelay = `${i * 60}ms`
-          resultsEl.appendChild(card)
+
+        const CATS = ['PRACTITIONER', 'THEORIST', 'CONNECTOR']
+        const grouped = {}
+        CATS.forEach(c => { grouped[c] = [] })
+        people.forEach(p => {
+          const cat = (p.category || '').toUpperCase()
+          if (grouped[cat]) grouped[cat].push(p)
+          else grouped['PRACTITIONER'].push(p)
         })
+
+        let cardIndex = 0
+        CATS.forEach(cat => {
+          if (grouped[cat].length === 0) return
+          const header = document.createElement('div')
+          header.className = 'suggest-category-header'
+          header.textContent = cat
+          resultsEl.appendChild(header)
+          grouped[cat].forEach(p => {
+            const card = buildCard(p, data.search_hash)
+            card.style.animationDelay = `${cardIndex * 60}ms`
+            cardIndex++
+            resultsEl.appendChild(card)
+          })
+        })
+
         resultsEl.hidden = false
+        if (window.ORBIT_GUEST) localStorage.setItem('guest_suggest_used', '1')
       }
 
       if (window.ORBIT_ADMIN) {

@@ -39,6 +39,18 @@ function injectStyles() {
       position: absolute;
       top: 44px; left: 0; right: 0; bottom: 0;
       overflow: hidden;
+      max-width: 100vw;
+    }
+
+    @media (max-width: 700px) {
+      .orbit-progress { padding: 0 16px; }
+      .orbit-progress-label { font-size: 10px; letter-spacing: 0.08em; }
+      .orbit-side-panel {
+        width: 100% !important;
+        left: 0 !important;
+        border-left: none !important;
+        border-top: 1px solid rgba(184,115,51,0.15);
+      }
     }
   `
   document.head.appendChild(s)

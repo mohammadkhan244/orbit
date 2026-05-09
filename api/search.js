@@ -38,6 +38,7 @@ export default async function handler(req, res) {
   const identityPack = { ...IDENTITY_PACK, ews_story: ewsStory || IDENTITY_PACK.ews_story }
   const systemPrompt = SEARCH_SYSTEM_PROMPT
     .replace('[IDENTITY_PACK]', JSON.stringify(identityPack, null, 2))
+    .replace('[EWS_STORY]', ewsStory || '')
     .replace('[USER_QUERY]', query.trim())
 
   try {
@@ -49,13 +50,13 @@ export default async function handler(req, res) {
       messages: [{ role: 'user', content: 'Search and return results as instructed.' }],
     })
 
-    // Parse per ai-behavior.md parsing block
-    const text = response.content
+    const raw = response.content
       .filter(b => b.type === 'text')
       .map(b => b.text)
       .join('')
-    const clean = text.replace(/```json|```/g, '').trim()
-    const parsed = JSON.parse(clean)
+    const match = raw.match(/\{[\s\S]*\}/)
+    if (!match) throw new Error('No JSON found in response')
+    const parsed = JSON.parse(match[0])
     parsed.people?.forEach(p => { p.id = crypto.randomUUID() })
 
     return res.status(200).json({ ...parsed, search_hash })
