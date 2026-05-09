@@ -41,7 +41,7 @@ export default async function handler(req, res) {
         console.log('[identity] attempting confirmation email to:', identity.email)
         try {
           const r1 = await resend.emails.send({
-            from: 'onboarding@resend.dev',
+            from: 'ORBIT <mohammadkhan@themohammadkhan.com>',
             to: identity.email,
             subject: 'Your orbit is saved.',
             text: `Hi ${name},\n\nYour orbit is saved. When ORBIT launches, you will pick up exactly where you left off.\n\n- ORBIT`,
@@ -52,7 +52,7 @@ export default async function handler(req, res) {
         }
         try {
           const r2 = await resend.emails.send({
-            from: 'onboarding@resend.dev',
+            from: 'ORBIT <mohammadkhan@themohammadkhan.com>',
             to: 'mohammad@modernmyths.co',
             subject: `New gravity profile: ${name}`,
             text: `Name: ${name}\nEmail: ${identity.email}\nMission: ${identity.mission || '-'}\nSession: ${sessionId}`,
@@ -67,7 +67,7 @@ export default async function handler(req, res) {
         const name = identity.name || 'there'
         try {
           await resend.emails.send({
-            from: 'onboarding@resend.dev',
+            from: 'ORBIT <mohammadkhan@themohammadkhan.com>',
             to: identity.email,
             subject: 'Your gravity profile has been updated.',
             text: `Hi ${name},\n\nYour gravity profile has been updated.\n\nName: ${name}\nMission: ${identity.mission || '-'}\nThinking partner: ${identity.worldview || '-'}\n\n- ORBIT`,
@@ -78,7 +78,7 @@ export default async function handler(req, res) {
         }
         try {
           await resend.emails.send({
-            from: 'onboarding@resend.dev',
+            from: 'ORBIT <mohammadkhan@themohammadkhan.com>',
             to: 'mohammad@modernmyths.co',
             subject: `Profile updated: ${name} - ${identity.email}`,
             text: `Name: ${name}\nEmail: ${identity.email}\nMission: ${identity.mission || '-'}\nSession: ${sessionId}`,
