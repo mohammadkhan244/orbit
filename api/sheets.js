@@ -34,18 +34,23 @@ export default async function handler(req, res) {
   const WEBHOOK = process.env.SHEETS_WEBHOOK_URL
   if (!WEBHOOK) return res.status(503).json({ error: 'SHEETS_WEBHOOK_URL not configured' })
 
-  try {
-    // ── GET: fetch all contacts ──────────────────────────────────────
-    if (req.method === 'GET') {
+  // ── GET: fetch all contacts ──────────────────────────────────────
+  if (req.method === 'GET') {
+    try {
       const r = await fetch(`${WEBHOOK}?action=getAll`)
       if (!r.ok) throw new Error(`webhook ${r.status}`)
       const data = await r.json()
       const contacts = (data.rows || []).map(rowToContact)
       return res.status(200).json(contacts)
+    } catch (err) {
+      console.error('[sheets] GET failed', err)
+      return res.status(502).json({ error: 'Sheets unavailable', detail: err.message })
     }
+  }
 
-    // ── POST: add new contact row ────────────────────────────────────
-    if (req.method === 'POST') {
+  // ── POST: add new contact row ────────────────────────────────────
+  if (req.method === 'POST') {
+    try {
       const contact = req.body
       const row = contactToRow(contact)
       const r = await fetch(WEBHOOK, {
@@ -55,12 +60,17 @@ export default async function handler(req, res) {
       })
       if (!r.ok) throw new Error(`webhook ${r.status}`)
       return res.status(200).json({ ok: true })
+    } catch (err) {
+      console.error('[sheets] POST failed', err)
+      return res.status(502).json({ error: 'Sheets unavailable', detail: err.message })
     }
+  }
 
-    // ── PATCH: update status or notes by id ─────────────────────────
-    if (req.method === 'PATCH') {
-      const { id, fields } = req.body ?? {}
-      if (!id) return res.status(400).json({ error: 'id is required' })
+  // ── PATCH: update status or notes by id ─────────────────────────
+  if (req.method === 'PATCH') {
+    const { id, fields } = req.body ?? {}
+    if (!id) return res.status(400).json({ error: 'id is required' })
+    try {
       const r = await fetch(WEBHOOK, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -68,11 +78,11 @@ export default async function handler(req, res) {
       })
       if (!r.ok) throw new Error(`webhook ${r.status}`)
       return res.status(200).json({ ok: true })
+    } catch (err) {
+      console.error('[sheets] PATCH failed', err)
+      return res.status(502).json({ error: 'Sheets unavailable', detail: err.message })
     }
-
-    return res.status(405).json({ error: 'Method not allowed' })
-  } catch (err) {
-    console.error('[sheets]', err)
-    return res.status(502).json({ error: 'Sheets unavailable', detail: err.message })
   }
+
+  return res.status(405).json({ error: 'Method not allowed' })
 }

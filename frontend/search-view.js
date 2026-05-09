@@ -1,3 +1,56 @@
+const SEARCH_MESSAGES = [
+  'Mapping your identity profile...',
+  'Scanning active science communicators...',
+  'Cross-referencing publication overlap...',
+  'Surfacing reachable moonshots...',
+  'Ranking by proximity to your work...',
+  'Building your results...',
+]
+
+// ── Admin helpers ────────────────────────────────────────────────────────────
+
+function adminLog(label, data) {
+  if (!window.ORBIT_ADMIN) return
+  const elapsed = typeof data._elapsed === 'number' ? ` (${data._elapsed}ms)` : ''
+  console.group(`[ORBIT] ${label}${elapsed}`)
+  const { _elapsed, ...rest } = data
+  console.log(Object.keys(rest).length ? rest : data)
+  console.groupEnd()
+}
+
+// ── Progress bar ─────────────────────────────────────────────────────────────
+
+function startProgress(wrapEl, fillEl, msgEl, messages) {
+  wrapEl.hidden = false
+  fillEl.style.width = '0%'
+  msgEl.textContent = messages[0]
+  let step = 0
+  let stopped = false
+
+  const timer = setInterval(() => {
+    if (stopped) return
+    step++
+    fillEl.style.width = `${Math.min(100, Math.round((step / messages.length) * 100))}%`
+    if (step < messages.length) msgEl.textContent = messages[step]
+    if (step >= messages.length) clearInterval(timer)
+  }, 3000)
+
+  return {
+    finish() {
+      stopped = true
+      clearInterval(timer)
+      fillEl.style.width = '100%'
+    },
+    hide() {
+      stopped = true
+      clearInterval(timer)
+      wrapEl.hidden = true
+    },
+  }
+}
+
+// ── Styles ───────────────────────────────────────────────────────────────────
+
 function injectStyles() {
   if (document.getElementById('search-view-styles')) return
   const s = document.createElement('style')
@@ -82,10 +135,21 @@ function injectStyles() {
     }
     .search-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
-    .search-status {
+    /* ── Progress bar ── */
+    .search-progress { margin-top: 28px; }
+    .search-progress-track {
+      width: 100%; height: 1px;
+      background: rgba(184,115,51,0.15);
+    }
+    .search-progress-fill {
+      height: 100%; background: #b87333;
+      width: 0%; transition: width 0.6s ease;
+    }
+    .search-progress-msg {
       font-family: 'Courier Prime', monospace;
       font-size: 11px; letter-spacing: 0.1em;
-      color: rgba(240,236,228,0.3);
+      color: rgba(240,236,228,0.32);
+      margin-top: 10px; min-height: 1.4em;
     }
 
     .search-error {
@@ -174,9 +238,36 @@ function injectStyles() {
       color: rgba(240,236,228,0.3);
       cursor: default;
     }
+
+    /* ── Admin raw panel ── */
+    .admin-raw-panel {
+      margin-top: 40px;
+      border: 1px solid rgba(184,115,51,0.2);
+      border-radius: 2px;
+    }
+    .admin-raw-panel summary {
+      font-family: 'Courier Prime', monospace;
+      font-size: 10px; letter-spacing: 0.15em;
+      color: rgba(184,115,51,0.55);
+      padding: 10px 14px; cursor: pointer;
+      text-transform: uppercase; user-select: none;
+      list-style: none;
+    }
+    .admin-raw-panel summary::before { content: '▸  '; }
+    .admin-raw-panel[open] summary::before { content: '▾  '; }
+    .admin-raw-panel pre {
+      font-family: 'Courier Prime', monospace;
+      font-size: 11px; line-height: 1.55;
+      color: rgba(240,236,228,0.45);
+      padding: 14px; overflow-x: auto;
+      border-top: 1px solid rgba(184,115,51,0.12);
+      white-space: pre-wrap; word-break: break-all;
+    }
   `
   document.head.appendChild(s)
 }
+
+// ── Card builder ─────────────────────────────────────────────────────────────
 
 function buildCard(person, searchHash, source) {
   const card = document.createElement('div')
@@ -234,6 +325,7 @@ function buildCard(person, searchHash, source) {
       search_hash: searchHash,
       created_at: now.toISOString(),
     }
+    adminLog('Event dispatch', { event: 'orbit:contact-added', contact })
     document.dispatchEvent(new CustomEvent('orbit:contact-added', { detail: contact }))
     addBtn.textContent = 'Added'
     addBtn.classList.add('added')
@@ -251,6 +343,8 @@ function buildCard(person, searchHash, source) {
   return card
 }
 
+// ── Init ─────────────────────────────────────────────────────────────────────
+
 function init() {
   const container = document.getElementById('search-view')
   if (!container) return
@@ -267,7 +361,7 @@ function init() {
   eyebrow.className = 'search-eyebrow'
   eyebrow.textContent = 'Search'
 
-  // main query textarea
+  // query textarea
   const queryEl = document.createElement('textarea')
   queryEl.className = 'search-query'
   queryEl.placeholder = 'Describe who you\'re looking for…'
@@ -293,7 +387,7 @@ function init() {
     ewsBtn.textContent = ewsExpand.hidden ? '+ Include EWS context' : '− Hide EWS context'
   })
 
-  // actions row
+  // actions
   const actions = document.createElement('div')
   actions.className = 'search-actions'
 
@@ -301,17 +395,31 @@ function init() {
   searchBtn.className = 'search-btn'
   searchBtn.textContent = 'Search'
 
-  const status = document.createElement('span')
-  status.className = 'search-status'
-
   actions.appendChild(searchBtn)
-  actions.appendChild(status)
 
+  // progress bar
+  const progressWrap = document.createElement('div')
+  progressWrap.className = 'search-progress'
+  progressWrap.hidden = true
+
+  const progressTrack = document.createElement('div')
+  progressTrack.className = 'search-progress-track'
+  const progressFill = document.createElement('div')
+  progressFill.className = 'search-progress-fill'
+  progressTrack.appendChild(progressFill)
+
+  const progressMsg = document.createElement('div')
+  progressMsg.className = 'search-progress-msg'
+
+  progressWrap.appendChild(progressTrack)
+  progressWrap.appendChild(progressMsg)
+
+  // error
   const errorEl = document.createElement('div')
   errorEl.className = 'search-error'
   errorEl.hidden = true
 
-  // results container
+  // results
   const resultsEl = document.createElement('div')
   resultsEl.className = 'search-results'
   resultsEl.hidden = true
@@ -320,14 +428,26 @@ function init() {
   resultsLabel.className = 'results-label'
   resultsEl.appendChild(resultsLabel)
 
+  // admin raw panel
+  const adminPanel = document.createElement('details')
+  adminPanel.className = 'admin-raw-panel'
+  adminPanel.hidden = true
+  const adminSummary = document.createElement('summary')
+  adminSummary.textContent = 'Raw API Response'
+  const adminPre = document.createElement('pre')
+  adminPanel.appendChild(adminSummary)
+  adminPanel.appendChild(adminPre)
+
   // assemble
   inner.appendChild(eyebrow)
   inner.appendChild(queryEl)
   inner.appendChild(ewsBtn)
   inner.appendChild(ewsExpand)
   inner.appendChild(actions)
+  inner.appendChild(progressWrap)
   inner.appendChild(errorEl)
   inner.appendChild(resultsEl)
+  inner.appendChild(adminPanel)
   wrap.appendChild(inner)
   container.appendChild(wrap)
 
@@ -337,19 +457,24 @@ function init() {
     if (!query) { queryEl.focus(); return }
 
     searchBtn.disabled = true
-    searchBtn.textContent = 'Searching…'
-    status.textContent = ''
     errorEl.hidden = true
     resultsEl.hidden = true
-    // clear old cards (keep label)
+    adminPanel.hidden = true
     while (resultsEl.children.length > 1) resultsEl.removeChild(resultsEl.lastChild)
+
+    const prog = startProgress(progressWrap, progressFill, progressMsg, SEARCH_MESSAGES)
+    const body = { query, ewsStory: ewsArea.value.trim() }
+    adminLog('Search request', { url: '/api/search', method: 'POST', body })
+    const t0 = performance.now()
 
     try {
       const res = await fetch('/api/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query, ewsStory: ewsArea.value.trim() }),
+        body: JSON.stringify(body),
       })
+
+      const elapsed = Math.round(performance.now() - t0)
 
       if (res.status === 429) {
         const d = await res.json()
@@ -361,6 +486,12 @@ function init() {
       }
 
       const data = await res.json()
+      adminLog('Search response', { status: res.status, people: data.people?.length ?? 0, _elapsed: elapsed })
+
+      prog.finish()
+      await new Promise(r => setTimeout(r, 220))
+      prog.hide()
+
       const people = data.people ?? []
 
       if (people.length === 0) {
@@ -375,16 +506,21 @@ function init() {
         })
         resultsEl.hidden = false
       }
+
+      if (window.ORBIT_ADMIN) {
+        adminPre.textContent = JSON.stringify(data, null, 2)
+        adminPanel.hidden = false
+      }
     } catch (err) {
+      prog.hide()
+      adminLog('Search error', { message: err.message, _elapsed: Math.round(performance.now() - t0) })
       errorEl.textContent = err.message
       errorEl.hidden = false
     } finally {
       searchBtn.disabled = false
-      searchBtn.textContent = 'Search'
     }
   })
 
-  // allow Enter (without shift) to trigger search from the textarea
   queryEl.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()

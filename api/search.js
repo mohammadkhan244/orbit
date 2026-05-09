@@ -56,6 +56,7 @@ export default async function handler(req, res) {
       .join('')
     const clean = text.replace(/```json|```/g, '').trim()
     const parsed = JSON.parse(clean)
+    parsed.people?.forEach(p => { p.id = crypto.randomUUID() })
 
     return res.status(200).json({ ...parsed, search_hash })
   } catch (err) {

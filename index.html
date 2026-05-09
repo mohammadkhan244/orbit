@@ -115,6 +115,19 @@
     #orbit-view  { /* canvas fills this */ }
     #search-view { padding: 40px 32px; }
     #suggest-view { padding: 40px 32px; }
+
+    /* ── ADMIN BADGE ── */
+    #admin-badge {
+      font-family: 'Courier Prime', monospace;
+      font-size: 10px; letter-spacing: 0.18em;
+      color: #b87333;
+      background: rgba(184,115,51,0.12);
+      border: 1px solid rgba(184,115,51,0.35);
+      border-radius: 2px;
+      padding: 3px 10px;
+      text-transform: uppercase;
+      user-select: none;
+    }
   </style>
 </head>
 <body>
@@ -126,6 +139,7 @@
       <li><a data-view="search">SEARCH</a></li>
       <li><a data-view="suggest">SUGGEST</a></li>
     </ul>
+    <span id="admin-badge" hidden>ADMIN</span>
   </nav>
 
   <main>
@@ -133,6 +147,15 @@
     <div id="search-view"  class="view"></div>
     <div id="suggest-view" class="view"></div>
   </main>
+
+  <script>
+    // Admin mode: ?admin=true activates logging + raw response panel
+    window.ORBIT_ADMIN = new URLSearchParams(location.search).get('admin') === 'true'
+    if (window.ORBIT_ADMIN) {
+      document.getElementById('admin-badge').hidden = false
+      console.log('[ORBIT ADMIN] Admin mode active — logging all API calls and events')
+    }
+  </script>
 
   <script type="module">
     const links = document.querySelectorAll('[data-view]')

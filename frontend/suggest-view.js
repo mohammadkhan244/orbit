@@ -1,3 +1,56 @@
+const SUGGEST_MESSAGES = [
+  'Reading your identity pack...',
+  'Scanning across science communication, systems thinking, speculative fiction...',
+  'Finding who you haven\'t considered...',
+  'Checking reachability — Substack, LinkedIn, public contact forms...',
+  'Surfacing your blind spots...',
+  'Almost there...',
+]
+
+// ── Admin helpers ────────────────────────────────────────────────────────────
+
+function adminLog(label, data) {
+  if (!window.ORBIT_ADMIN) return
+  const elapsed = typeof data._elapsed === 'number' ? ` (${data._elapsed}ms)` : ''
+  console.group(`[ORBIT] ${label}${elapsed}`)
+  const { _elapsed, ...rest } = data
+  console.log(Object.keys(rest).length ? rest : data)
+  console.groupEnd()
+}
+
+// ── Progress bar ─────────────────────────────────────────────────────────────
+
+function startProgress(wrapEl, fillEl, msgEl, messages) {
+  wrapEl.hidden = false
+  fillEl.style.width = '0%'
+  msgEl.textContent = messages[0]
+  let step = 0
+  let stopped = false
+
+  const timer = setInterval(() => {
+    if (stopped) return
+    step++
+    fillEl.style.width = `${Math.min(100, Math.round((step / messages.length) * 100))}%`
+    if (step < messages.length) msgEl.textContent = messages[step]
+    if (step >= messages.length) clearInterval(timer)
+  }, 3000)
+
+  return {
+    finish() {
+      stopped = true
+      clearInterval(timer)
+      fillEl.style.width = '100%'
+    },
+    hide() {
+      stopped = true
+      clearInterval(timer)
+      wrapEl.hidden = true
+    },
+  }
+}
+
+// ── Styles ───────────────────────────────────────────────────────────────────
+
 function injectStyles() {
   if (document.getElementById('suggest-view-styles')) return
   const s = document.createElement('style')
@@ -47,11 +100,21 @@ function injectStyles() {
     }
     .suggest-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
-    .suggest-status {
+    /* ── Progress bar ── */
+    .suggest-progress { margin-top: 28px; }
+    .suggest-progress-track {
+      width: 100%; height: 1px;
+      background: rgba(184,115,51,0.15);
+    }
+    .suggest-progress-fill {
+      height: 100%; background: #b87333;
+      width: 0%; transition: width 0.6s ease;
+    }
+    .suggest-progress-msg {
       font-family: 'Courier Prime', monospace;
       font-size: 11px; letter-spacing: 0.1em;
-      color: rgba(240,236,228,0.28);
-      margin-top: 16px;
+      color: rgba(240,236,228,0.32);
+      margin-top: 10px; min-height: 1.4em;
     }
 
     .suggest-error {
@@ -139,9 +202,36 @@ function injectStyles() {
       color: rgba(240,236,228,0.3);
       cursor: default;
     }
+
+    /* ── Admin raw panel ── */
+    .suggest-admin-raw-panel {
+      margin-top: 40px;
+      border: 1px solid rgba(184,115,51,0.2);
+      border-radius: 2px;
+    }
+    .suggest-admin-raw-panel summary {
+      font-family: 'Courier Prime', monospace;
+      font-size: 10px; letter-spacing: 0.15em;
+      color: rgba(184,115,51,0.55);
+      padding: 10px 14px; cursor: pointer;
+      text-transform: uppercase; user-select: none;
+      list-style: none;
+    }
+    .suggest-admin-raw-panel summary::before { content: '▸  '; }
+    .suggest-admin-raw-panel[open] summary::before { content: '▾  '; }
+    .suggest-admin-raw-panel pre {
+      font-family: 'Courier Prime', monospace;
+      font-size: 11px; line-height: 1.55;
+      color: rgba(240,236,228,0.45);
+      padding: 14px; overflow-x: auto;
+      border-top: 1px solid rgba(184,115,51,0.12);
+      white-space: pre-wrap; word-break: break-all;
+    }
   `
   document.head.appendChild(s)
 }
+
+// ── Card builder ─────────────────────────────────────────────────────────────
 
 function buildCard(person, searchHash) {
   const card = document.createElement('div')
@@ -199,6 +289,7 @@ function buildCard(person, searchHash) {
       search_hash: searchHash,
       created_at: now.toISOString(),
     }
+    adminLog('Event dispatch', { event: 'orbit:contact-added', contact })
     document.dispatchEvent(new CustomEvent('orbit:contact-added', { detail: contact }))
     addBtn.textContent = 'Added'
     addBtn.classList.add('added')
@@ -215,6 +306,8 @@ function buildCard(person, searchHash) {
 
   return card
 }
+
+// ── Init ─────────────────────────────────────────────────────────────────────
 
 function init() {
   const container = document.getElementById('suggest-view')
@@ -239,9 +332,22 @@ function init() {
   suggestBtn.className = 'suggest-btn'
   suggestBtn.textContent = 'Who should I reach out to?'
 
-  const statusEl = document.createElement('div')
-  statusEl.className = 'suggest-status'
-  statusEl.hidden = true
+  // progress bar
+  const progressWrap = document.createElement('div')
+  progressWrap.className = 'suggest-progress'
+  progressWrap.hidden = true
+
+  const progressTrack = document.createElement('div')
+  progressTrack.className = 'suggest-progress-track'
+  const progressFill = document.createElement('div')
+  progressFill.className = 'suggest-progress-fill'
+  progressTrack.appendChild(progressFill)
+
+  const progressMsg = document.createElement('div')
+  progressMsg.className = 'suggest-progress-msg'
+
+  progressWrap.appendChild(progressTrack)
+  progressWrap.appendChild(progressMsg)
 
   const errorEl = document.createElement('div')
   errorEl.className = 'suggest-error'
@@ -255,23 +361,36 @@ function init() {
   resultsLabel.className = 'suggest-results-label'
   resultsEl.appendChild(resultsLabel)
 
+  // admin raw panel
+  const adminPanel = document.createElement('details')
+  adminPanel.className = 'suggest-admin-raw-panel'
+  adminPanel.hidden = true
+  const adminSummary = document.createElement('summary')
+  adminSummary.textContent = 'Raw API Response'
+  const adminPre = document.createElement('pre')
+  adminPanel.appendChild(adminSummary)
+  adminPanel.appendChild(adminPre)
+
   inner.appendChild(eyebrow)
   inner.appendChild(headline)
   inner.appendChild(suggestBtn)
-  inner.appendChild(statusEl)
+  inner.appendChild(progressWrap)
   inner.appendChild(errorEl)
   inner.appendChild(resultsEl)
+  inner.appendChild(adminPanel)
   wrap.appendChild(inner)
   container.appendChild(wrap)
 
   suggestBtn.addEventListener('click', async () => {
     suggestBtn.disabled = true
-    suggestBtn.textContent = 'Scanning…'
-    statusEl.textContent = 'Running search across your fields…'
-    statusEl.hidden = false
     errorEl.hidden = true
     resultsEl.hidden = true
+    adminPanel.hidden = true
     while (resultsEl.children.length > 1) resultsEl.removeChild(resultsEl.lastChild)
+
+    const prog = startProgress(progressWrap, progressFill, progressMsg, SUGGEST_MESSAGES)
+    adminLog('Suggest request', { url: '/api/suggest', method: 'POST' })
+    const t0 = performance.now()
 
     try {
       const res = await fetch('/api/suggest', {
@@ -279,6 +398,8 @@ function init() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
       })
+
+      const elapsed = Math.round(performance.now() - t0)
 
       if (res.status === 429) {
         const d = await res.json()
@@ -290,6 +411,12 @@ function init() {
       }
 
       const data = await res.json()
+      adminLog('Suggest response', { status: res.status, people: data.people?.length ?? 0, _elapsed: elapsed })
+
+      prog.finish()
+      await new Promise(r => setTimeout(r, 220))
+      prog.hide()
+
       const people = data.people ?? []
 
       if (people.length === 0) {
@@ -304,13 +431,18 @@ function init() {
         })
         resultsEl.hidden = false
       }
+
+      if (window.ORBIT_ADMIN) {
+        adminPre.textContent = JSON.stringify(data, null, 2)
+        adminPanel.hidden = false
+      }
     } catch (err) {
+      prog.hide()
+      adminLog('Suggest error', { message: err.message, _elapsed: Math.round(performance.now() - t0) })
       errorEl.textContent = err.message
       errorEl.hidden = false
     } finally {
       suggestBtn.disabled = false
-      suggestBtn.textContent = 'Who should I reach out to?'
-      statusEl.hidden = true
     }
   })
 }
