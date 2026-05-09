@@ -13,13 +13,15 @@ function injectStyles() {
     #onboarding-overlay {
       position: fixed; inset: 0; z-index: 200;
       background: #0a0a0a;
-      display: flex; align-items: center; justify-content: center;
-      padding: 40px 24px;
+      display: flex; align-items: flex-start; justify-content: center;
+      padding: clamp(16px, 4vw, 40px) clamp(16px, 4vw, 24px);
       transition: opacity 0.4s ease;
+      overflow-y: auto;
+      box-sizing: border-box;
     }
     #onboarding-overlay.fade-out { opacity: 0; pointer-events: none; }
 
-    .onboarding-inner { max-width: 560px; width: 100%; }
+    .onboarding-inner { max-width: min(560px, 100%); width: 100%; box-sizing: border-box; }
 
     .onboarding-eyebrow {
       font-family: 'Courier Prime', monospace;
@@ -30,7 +32,7 @@ function injectStyles() {
     }
     .onboarding-headline {
       font-family: 'Courier Prime', monospace;
-      font-size: 22px; font-weight: 400;
+      font-size: clamp(16px, 3.5vw, 22px); font-weight: 400;
       color: rgba(240,236,228,0.72);
       line-height: 1.4;
       margin-bottom: 48px;
@@ -56,6 +58,7 @@ function injectStyles() {
       outline: none; line-height: 1.5;
       transition: border-color 0.2s ease;
       resize: none;
+      box-sizing: border-box;
     }
     .onboarding-input::placeholder,
     .onboarding-textarea::placeholder { color: rgba(240,236,228,0.18); }
@@ -72,6 +75,10 @@ function injectStyles() {
       cursor: pointer;
       transition: all 0.15s ease;
       margin-top: 8px;
+      box-sizing: border-box;
+    }
+    @media (max-width: 480px) {
+      .onboarding-submit, .welcome-cta { width: 100%; text-align: center; }
     }
     .onboarding-submit:hover:not(:disabled) {
       background: rgba(184,115,51,0.08);
@@ -84,19 +91,16 @@ function injectStyles() {
       margin-top: 14px; min-height: 1.4em;
     }
 
-    /* Allow scroll when form is tall */
-    #onboarding-overlay { overflow-y: auto; }
-
     /* ── Welcome screen ── */
     .welcome-heading {
       font-family: 'Courier Prime', monospace;
-      font-size: 28px; font-weight: 400;
+      font-size: clamp(20px, 4vw, 28px); font-weight: 400;
       color: #b87333; line-height: 1.3;
       margin-bottom: 40px; max-width: 480px;
     }
     .welcome-body {
       font-family: 'DM Sans', sans-serif;
-      font-size: 15px; color: rgba(240,236,228,0.65);
+      font-size: clamp(13px, 2.5vw, 15px); color: rgba(240,236,228,0.65);
       line-height: 1.7; margin-bottom: 20px; max-width: 440px;
     }
     .welcome-cta {
@@ -106,6 +110,7 @@ function injectStyles() {
       font-size: 12px; letter-spacing: 0.18em;
       text-transform: uppercase; padding: 12px 36px;
       cursor: pointer; transition: all 0.15s ease; margin-top: 40px;
+      box-sizing: border-box;
     }
     .welcome-cta:hover {
       background: rgba(184,115,51,0.08);
