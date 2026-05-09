@@ -1,9 +1,11 @@
 import { createClient } from '@vercel/kv'
+import { Resend } from 'resend'
 
 const kv = createClient({
   url: process.env.orbit_KV_REST_API_URL,
   token: process.env.orbit_KV_REST_API_TOKEN,
 })
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 const TTL = 90 * 24 * 60 * 60 // 90 days in seconds
 
@@ -27,10 +29,27 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'POST') {
-    const { sessionId, identity } = req.body ?? {}
+    const { sessionId, identity, sendWelcome } = req.body ?? {}
     if (!sessionId || !identity) return res.status(400).json({ error: 'sessionId and identity required' })
     try {
       await kv.set(`orbit:identity:${sessionId}`, identity, { ex: TTL })
+
+      if (sendWelcome && identity.email && identity.email.includes('@')) {
+        const name = identity.name || 'there'
+        resend.emails.send({
+          from: 'orbit@modernmyths.co',
+          to: identity.email,
+          subject: 'Your orbit is saved.',
+          text: `Hi ${name},\n\nYour orbit is saved. When ORBIT launches, you'll pick up exactly where you left off.\n\n— ORBIT`,
+        }).catch(err => console.error('[identity] confirmation email failed', err))
+        resend.emails.send({
+          from: 'orbit@modernmyths.co',
+          to: 'mohammad@modernmyths.co',
+          subject: `New gravity profile: ${name} — ${identity.email}`,
+          text: `Name: ${name}\nEmail: ${identity.email}\nMission: ${identity.mission || '—'}\nSession: ${sessionId}`,
+        }).catch(err => console.error('[identity] notification email failed', err))
+      }
+
       return res.status(200).json({ ok: true })
     } catch (err) {
       console.error('[identity] POST failed', err)

@@ -391,12 +391,39 @@
   </main>
 
   <script>
-    // Admin mode: ?admin=true activates logging + raw response panel
-    window.ORBIT_ADMIN = new URLSearchParams(location.search).get('admin') === 'true'
-    if (window.ORBIT_ADMIN) {
-      document.getElementById('admin-badge').hidden = false
-      console.log('[ORBIT ADMIN] Admin mode active — logging all API calls and events')
-    }
+    // Admin mode: ?admin=true&code=X required. Verified state stored in sessionStorage.
+    window.ORBIT_ADMIN = false
+    window.ORBIT_ADMIN_PENDING = false
+    ;(function() {
+      var params = new URLSearchParams(location.search)
+      if (params.get('admin') !== 'true') return
+
+      if (sessionStorage.getItem('admin_verified') === 'true') {
+        window.ORBIT_ADMIN = true
+        document.getElementById('admin-badge').hidden = false
+        console.log('[ORBIT ADMIN] Admin mode active')
+        return
+      }
+
+      // First visit — verify code before granting admin UI
+      window.ORBIT_ADMIN_PENDING = true
+      var code = params.get('code') || ''
+      fetch('/api/admin-auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: code }),
+      })
+      .then(function(r) { return r.json() })
+      .then(function(data) {
+        if (data.ok) {
+          sessionStorage.setItem('admin_verified', 'true')
+          location.reload()
+        } else {
+          location.href = '/'
+        }
+      })
+      .catch(function() { location.href = '/' })
+    })()
 
     // Guest mode: ?guest=true limits to 1 search + 1 suggest then captures email
     window.ORBIT_GUEST = new URLSearchParams(location.search).get('guest') === 'true'

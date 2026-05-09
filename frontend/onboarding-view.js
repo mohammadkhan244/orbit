@@ -83,6 +83,34 @@ function injectStyles() {
       font-size: 12px; color: rgba(184,115,51,0.65);
       margin-top: 14px; min-height: 1.4em;
     }
+
+    /* Allow scroll when form is tall */
+    #onboarding-overlay { overflow-y: auto; }
+
+    /* ── Welcome screen ── */
+    .welcome-heading {
+      font-family: 'Courier Prime', monospace;
+      font-size: 28px; font-weight: 400;
+      color: #b87333; line-height: 1.3;
+      margin-bottom: 40px; max-width: 480px;
+    }
+    .welcome-body {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px; color: rgba(240,236,228,0.65);
+      line-height: 1.7; margin-bottom: 20px; max-width: 440px;
+    }
+    .welcome-cta {
+      display: inline-block;
+      background: none; border: 1px solid rgba(184,115,51,0.45);
+      color: #b87333; font-family: 'Courier Prime', monospace;
+      font-size: 12px; letter-spacing: 0.18em;
+      text-transform: uppercase; padding: 12px 36px;
+      cursor: pointer; transition: all 0.15s ease; margin-top: 40px;
+    }
+    .welcome-cta:hover {
+      background: rgba(184,115,51,0.08);
+      border-color: #b87333; color: #f0ece4;
+    }
   `
   document.head.appendChild(s)
 }
@@ -127,6 +155,25 @@ async function init() {
     try { localStorage.setItem(LS_SESSION, sessionId) } catch {}
     setIdentity(IDENTITY_PACK)
     window._orbitSessionResolve({ sessionId, identity: IDENTITY_PACK })
+    return
+  }
+
+  // Admin auth pending — show loading state and wait for verification + reload
+  if (window.ORBIT_ADMIN_PENDING) {
+    const overlay = makeOverlay()
+    const inner = document.createElement('div')
+    inner.className = 'onboarding-inner'
+    const eyebrow = document.createElement('div')
+    eyebrow.className = 'onboarding-eyebrow'
+    eyebrow.textContent = 'ORBIT'
+    const headline = document.createElement('div')
+    headline.className = 'onboarding-headline'
+    headline.textContent = 'Verifying admin access…'
+    inner.appendChild(eyebrow)
+    inner.appendChild(headline)
+    overlay.appendChild(inner)
+    hideNav()
+    document.body.appendChild(overlay)
     return
   }
 
@@ -177,10 +224,57 @@ async function init() {
     showNav()
   }
 
-  // New visitor: show onboarding form
+  // New visitor: guest sees welcome screen first, others go straight to form
   hideNav()
-  const overlay = buildForm()
-  document.body.appendChild(overlay)
+  if (window.ORBIT_GUEST) {
+    const welcomeOverlay = buildWelcomeScreen(() => {
+      document.body.appendChild(buildForm())
+    })
+    document.body.appendChild(welcomeOverlay)
+  } else {
+    document.body.appendChild(buildForm())
+  }
+}
+
+// ── Welcome screen (guest only) ───────────────────────────────────────────────
+
+function buildWelcomeScreen(onProceed) {
+  const overlay = makeOverlay()
+  const inner = document.createElement('div')
+  inner.className = 'onboarding-inner'
+
+  const eyebrow = document.createElement('div')
+  eyebrow.className = 'onboarding-eyebrow'
+  eyebrow.textContent = 'ORBIT'
+
+  const heading = document.createElement('div')
+  heading.className = 'welcome-heading'
+  heading.textContent = 'You have an orbit. You just can\'t see it yet.'
+
+  const p1 = document.createElement('p')
+  p1.className = 'welcome-body'
+  p1.textContent = 'ORBIT maps the people you should already be talking to — researchers, writers, builders working on the same problems you are. Not connections. Thinking partners.'
+
+  const p2 = document.createElement('p')
+  p2.className = 'welcome-body'
+  p2.textContent = 'You get one search and one suggestion. Your orbit is saved. When ORBIT launches, you\'ll pick up exactly where you left off.'
+
+  const cta = document.createElement('button')
+  cta.className = 'welcome-cta'
+  cta.textContent = 'Build my orbit →'
+
+  cta.addEventListener('click', () => {
+    overlay.remove()
+    onProceed()
+  })
+
+  inner.appendChild(eyebrow)
+  inner.appendChild(heading)
+  inner.appendChild(p1)
+  inner.appendChild(p2)
+  inner.appendChild(cta)
+  overlay.appendChild(inner)
+  return overlay
 }
 
 // ── Form builder ─────────────────────────────────────────────────────────────
@@ -199,10 +293,11 @@ function buildForm() {
   headline.textContent = 'Before we map your orbit — tell us about yourself.'
 
   const FIELDS = [
-    { key: 'name',        label: 'Your Name',                                      placeholder: 'First and last name',                                               type: 'input'    },
-    { key: 'mission',     label: 'What are you working on?',                       placeholder: '2–3 sentences. What is the thing?',                                  type: 'textarea' },
-    { key: 'north_stars', label: 'What do you want to be known for?',             placeholder: 'The work, the idea, the reputation.',                                type: 'input'    },
-    { key: 'worldview',   label: 'What kind of thinking partner are you looking for?', placeholder: 'Someone who can challenge assumptions, co-think, build alongside.', type: 'textarea' },
+    { key: 'name',        label: 'Your Name',                                           placeholder: 'First and last name',                                               type: 'input'    },
+    { key: 'mission',     label: 'What are you working on?',                            placeholder: '2–3 sentences. What is the thing?',                                  type: 'textarea' },
+    { key: 'north_stars', label: 'What do you want to be known for?',                  placeholder: 'The work, the idea, the reputation.',                                type: 'input'    },
+    { key: 'worldview',   label: 'What kind of thinking partner are you looking for?',  placeholder: 'Someone who can challenge assumptions, co-think, build alongside.',   type: 'textarea' },
+    { key: 'email',       label: 'Your email (optional)',                               placeholder: 'For saving your orbit across devices',                               type: 'email'    },
   ]
 
   const inputs = {}
@@ -224,6 +319,7 @@ function buildForm() {
     input.className = f.type === 'textarea' ? 'onboarding-textarea' : 'onboarding-input'
     input.placeholder = f.placeholder
     if (f.type === 'textarea') input.rows = 3
+    if (f.type === 'email') input.type = 'email'
 
     inputs[f.key] = input
     fieldEl.appendChild(label)
@@ -261,6 +357,7 @@ function buildForm() {
       north_stars: inputs.north_stars.value.trim() ? [inputs.north_stars.value.trim()] : [],
       interests:   [],
       worldview:   inputs.worldview.value.trim(),
+      email:       inputs.email.value.trim(),
       voice:       '',
       ews_story:   '',
     }
@@ -269,10 +366,11 @@ function buildForm() {
     try { localStorage.setItem(LS_SESSION, sessionId) } catch {}
 
     // Store to KV — non-blocking, failure is graceful
+    // sendWelcome: true triggers confirmation + notification emails via Resend
     fetch('/api/identity', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId, identity }),
+      body: JSON.stringify({ sessionId, identity, sendWelcome: true }),
     }).catch(() => {})
 
     dismiss(overlay)
