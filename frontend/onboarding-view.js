@@ -116,6 +116,27 @@ function injectStyles() {
       background: rgba(184,115,51,0.08);
       border-color: #b87333; color: #f0ece4;
     }
+
+    /* ── Return flow ── */
+    .return-divider {
+      border: none;
+      border-top: 1px solid rgba(184,115,51,0.15);
+      margin: 36px 0 24px;
+    }
+    .return-link {
+      background: none; border: none;
+      color: rgba(184,115,51,0.5);
+      font-family: 'Courier Prime', monospace;
+      font-size: 11px; letter-spacing: 0.12em;
+      cursor: pointer; padding: 0; display: block;
+      transition: color 0.15s ease;
+    }
+    .return-link:hover { color: rgba(184,115,51,0.85); }
+    .return-heading {
+      font-family: 'Courier Prime', monospace;
+      font-size: clamp(18px, 4vw, 24px); font-weight: 400;
+      color: #b87333; margin-bottom: 32px;
+    }
   `
   document.head.appendChild(s)
 }
@@ -273,13 +294,103 @@ function buildWelcomeScreen(onProceed) {
     onProceed()
   })
 
+  const divider = document.createElement('hr')
+  divider.className = 'return-divider'
+
+  const returnLink = document.createElement('button')
+  returnLink.className = 'return-link'
+  returnLink.textContent = 'Already have an orbit? Return to it →'
+  returnLink.addEventListener('click', () => buildReturnFlow(inner, overlay))
+
   inner.appendChild(eyebrow)
   inner.appendChild(heading)
   inner.appendChild(p1)
   inner.appendChild(p2)
   inner.appendChild(cta)
+  inner.appendChild(divider)
+  inner.appendChild(returnLink)
   overlay.appendChild(inner)
   return overlay
+}
+
+// ── Return flow ──────────────────────────────────────────────────────────────
+
+function buildReturnFlow(inner, overlay) {
+  inner.innerHTML = ''
+
+  const eyebrow = document.createElement('div')
+  eyebrow.className = 'onboarding-eyebrow'
+  eyebrow.textContent = 'ORBIT'
+
+  const heading = document.createElement('div')
+  heading.className = 'return-heading'
+  heading.textContent = 'Welcome back.'
+
+  const fieldEl = document.createElement('div')
+  fieldEl.className = 'onboarding-field'
+
+  const label = document.createElement('label')
+  label.className = 'onboarding-label'
+  label.textContent = 'Your email'
+
+  const emailInput = document.createElement('input')
+  emailInput.className = 'onboarding-input'
+  emailInput.type = 'email'
+  emailInput.placeholder = 'The email you used when you signed up'
+
+  fieldEl.appendChild(label)
+  fieldEl.appendChild(emailInput)
+
+  const submitBtn = document.createElement('button')
+  submitBtn.className = 'onboarding-submit'
+  submitBtn.textContent = 'Find my orbit'
+
+  const errorEl = document.createElement('div')
+  errorEl.className = 'onboarding-error'
+
+  inner.appendChild(eyebrow)
+  inner.appendChild(heading)
+  inner.appendChild(fieldEl)
+  inner.appendChild(submitBtn)
+  inner.appendChild(errorEl)
+
+  async function submitReturn() {
+    const email = emailInput.value.trim()
+    if (!email || !email.includes('@')) {
+      errorEl.textContent = 'Please enter a valid email.'
+      return
+    }
+    submitBtn.disabled = true
+    submitBtn.textContent = 'Searching...'
+    errorEl.textContent = ''
+    try {
+      const r = await fetch(`/api/identity?action=lookup&email=${encodeURIComponent(email)}`)
+      if (r.ok) {
+        const { sessionId, identity } = await r.json()
+        try { localStorage.setItem(LS_SESSION, sessionId) } catch {}
+        setIdentity(identity)
+        dismiss(overlay)
+        window._orbitSessionResolve({ sessionId, identity })
+        console.log('[return] session restored for', email)
+      } else if (r.status === 404) {
+        errorEl.textContent = 'No orbit found for that email. Did you use a different address?'
+        submitBtn.disabled = false
+        submitBtn.textContent = 'Find my orbit'
+      } else {
+        errorEl.textContent = 'Something went wrong. Try again.'
+        submitBtn.disabled = false
+        submitBtn.textContent = 'Find my orbit'
+      }
+    } catch {
+      errorEl.textContent = 'Connection error. Try again.'
+      submitBtn.disabled = false
+      submitBtn.textContent = 'Find my orbit'
+    }
+  }
+
+  submitBtn.addEventListener('click', submitReturn)
+  emailInput.addEventListener('keydown', e => { if (e.key === 'Enter') submitReturn() })
+  setTimeout(() => emailInput.focus(), 60)
 }
 
 // ── Form builder ─────────────────────────────────────────────────────────────
@@ -305,10 +416,17 @@ function buildForm() {
     { key: 'email',       label: 'Your email (optional)',                               placeholder: 'For saving your orbit across devices',                               type: 'email'    },
   ]
 
+  const returnLinkForm = document.createElement('button')
+  returnLinkForm.className = 'return-link'
+  returnLinkForm.style.marginBottom = '32px'
+  returnLinkForm.textContent = 'Already have an orbit? Return to it →'
+  returnLinkForm.addEventListener('click', () => buildReturnFlow(inner, overlay))
+
   const inputs = {}
 
   inner.appendChild(eyebrow)
   inner.appendChild(headline)
+  inner.appendChild(returnLinkForm)
 
   FIELDS.forEach(f => {
     const fieldEl = document.createElement('div')

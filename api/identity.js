@@ -16,7 +16,23 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end()
 
   if (req.method === 'GET') {
-    const { sessionId } = req.query
+    const { sessionId, action, email } = req.query
+
+    if (action === 'lookup') {
+      if (!email) return res.status(400).json({ error: 'email required' })
+      try {
+        const normalized = email.toLowerCase().trim()
+        const foundSessionId = await kv.get(`orbit:email:${normalized}`)
+        if (!foundSessionId) return res.status(404).json({ error: 'No orbit found for that email' })
+        const identity = await kv.get(`orbit:identity:${foundSessionId}`)
+        if (!identity) return res.status(404).json({ error: 'No orbit found for that email' })
+        return res.status(200).json({ sessionId: foundSessionId, identity })
+      } catch (err) {
+        console.error('[identity] lookup failed', err)
+        return res.status(502).json({ error: 'KV unavailable', detail: err.message })
+      }
+    }
+
     if (!sessionId) return res.status(400).json({ error: 'sessionId required' })
     try {
       const identity = await kv.get(`orbit:identity:${sessionId}`)
@@ -33,6 +49,14 @@ export default async function handler(req, res) {
     if (!sessionId || !identity) return res.status(400).json({ error: 'sessionId and identity required' })
     try {
       await kv.set(`orbit:identity:${sessionId}`, identity, { ex: TTL })
+
+      if (identity.email && identity.email.includes('@')) {
+        await kv.set(
+          `orbit:email:${identity.email.toLowerCase().trim()}`,
+          sessionId,
+          { ex: TTL }
+        )
+      }
 
       console.log('[identity] POST body flags:', { sendWelcome, sendUpdate, hasEmail: !!identity?.email, email: identity?.email })
 
