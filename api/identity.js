@@ -38,27 +38,28 @@ export default async function handler(req, res) {
 
       if (sendWelcome && identity.email && identity.email.includes('@')) {
         const name = identity.name || 'there'
+        console.log('[identity] attempting confirmation email to:', identity.email)
         try {
-          await resend.emails.send({
+          const r1 = await resend.emails.send({
             from: 'orbit@modernmyths.co',
             to: identity.email,
             subject: 'Your orbit is saved.',
-            text: `Hi ${name},\n\nYour orbit is saved. When ORBIT launches, you'll pick up exactly where you left off.\n\n- ORBIT`,
+            text: `Hi ${name},\n\nYour orbit is saved. When ORBIT launches, you will pick up exactly where you left off.\n\n- ORBIT`,
           })
-          console.log('[identity] confirmation email sent to', identity.email)
+          console.log('[identity] confirmation email result:', JSON.stringify(r1))
         } catch (err) {
-          console.error('[identity] confirmation email failed', err)
+          console.error('[identity] confirmation email error:', err.message, err.statusCode)
         }
         try {
-          await resend.emails.send({
+          const r2 = await resend.emails.send({
             from: 'orbit@modernmyths.co',
             to: 'mohammad@modernmyths.co',
-            subject: `New gravity profile: ${name} - ${identity.email}`,
+            subject: `New gravity profile: ${name}`,
             text: `Name: ${name}\nEmail: ${identity.email}\nMission: ${identity.mission || '-'}\nSession: ${sessionId}`,
           })
-          console.log('[identity] notification email sent to mohammad@modernmyths.co')
+          console.log('[identity] notification email result:', JSON.stringify(r2))
         } catch (err) {
-          console.error('[identity] notification email failed', err)
+          console.error('[identity] notification email error:', err.message, err.statusCode)
         }
       }
 
