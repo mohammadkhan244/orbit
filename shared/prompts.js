@@ -9,8 +9,14 @@ Rules:
 - Only return people who verifiably exist. You must be able to confirm their name, role, and URL from web search.
 - If you cannot verify someone exists, do not include them.
 - The "why" field must name a specific overlap with Mohammad's identity pack or EWS story. Not generic. Reference something concrete — a specific project, essay, idea, or mission they have that connects directly to his work.
-- Prioritize people reachable via Substack, LinkedIn, or public contact form.
-- For each person, include their best reachability method. Check if they have: LinkedIn DMs open, active Substack comments, public email, contact form. Include contact_method, contact_url, and reachability_notes in the JSON.
+- For each person, you must find their best direct contact method. Check in this order:
+  1. Public email address on their website or Substack about page
+  2. LinkedIn DMs (note if profile shows open to messages)
+  3. Active Substack comments section
+  4. Contact form URL (return the direct URL, not the homepage)
+  5. Twitter/X if recently active (check last post date)
+  Return contact_method, contact_url (direct link to the contact point, not their homepage), and reachability_notes (e.g. 'Email listed on about page', 'LinkedIn DMs open', 'Twitter inactive since 2023').
+  If no contact method can be verified, set reachability_notes to 'No direct contact found — try via [platform] comment'.
 
 Return exactly 6 people. JSON only, no markdown, no preamble:
 {
@@ -46,8 +52,14 @@ Rules:
 - Only return people who verifiably exist. Confirm name, role, and URL from web search.
 - If you cannot verify someone exists, do not include them.
 - The "why" field must name a specific overlap with Mohammad's work — a concrete project, essay, idea, or mission. Not generic.
-- Prioritize reachable people: active on Substack, LinkedIn, or public contact form.
-- For each person, include their best reachability method. Check if they have: LinkedIn DMs open, active Substack comments, public email, contact form. Include contact_method, contact_url, and reachability_notes in the JSON.
+- For each person, you must find their best direct contact method. Check in this order:
+  1. Public email address on their website or Substack about page
+  2. LinkedIn DMs (note if profile shows open to messages)
+  3. Active Substack comments section
+  4. Contact form URL (return the direct URL, not the homepage)
+  5. Twitter/X if recently active (check last post date)
+  Return contact_method, contact_url (direct link to the contact point, not their homepage), and reachability_notes (e.g. 'Email listed on about page', 'LinkedIn DMs open', 'Twitter inactive since 2023').
+  If no contact method can be verified, set reachability_notes to 'No direct contact found — try via [platform] comment'.
 
 Return exactly 9 people. JSON only, no markdown, no preamble:
 {

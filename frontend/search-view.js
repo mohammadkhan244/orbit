@@ -20,9 +20,10 @@ function adminLog(label, data) {
 
 // ── Progress bar ─────────────────────────────────────────────────────────────
 
-function startProgress(wrapEl, fillEl, msgEl, messages) {
+function startProgress(wrapEl, fillEl, msgEl, messages, pctEl) {
   wrapEl.hidden = false
   fillEl.style.width = '0%'
+  if (pctEl) pctEl.textContent = '0%'
   msgEl.textContent = messages[0]
   let step = 0
   let stopped = false
@@ -30,7 +31,9 @@ function startProgress(wrapEl, fillEl, msgEl, messages) {
   const timer = setInterval(() => {
     if (stopped) return
     step++
-    fillEl.style.width = `${Math.min(100, Math.round((step / messages.length) * 100))}%`
+    const pct = Math.min(100, Math.round((step / messages.length) * 100))
+    fillEl.style.width = `${pct}%`
+    if (pctEl) pctEl.textContent = `${pct}%`
     if (step < messages.length) msgEl.textContent = messages[step]
     if (step >= messages.length) clearInterval(timer)
   }, 3000)
@@ -40,6 +43,7 @@ function startProgress(wrapEl, fillEl, msgEl, messages) {
       stopped = true
       clearInterval(timer)
       fillEl.style.width = '100%'
+      if (pctEl) pctEl.textContent = '100%'
     },
     hide() {
       stopped = true
@@ -136,6 +140,15 @@ function injectStyles() {
 
     /* ── Progress bar ── */
     .search-progress { margin-top: 28px; }
+    .search-progress-header {
+      display: flex; justify-content: flex-end;
+      margin-bottom: 6px;
+    }
+    .search-progress-pct {
+      font-family: 'Courier Prime', monospace;
+      font-size: 11px; letter-spacing: 0.1em;
+      color: #b87333;
+    }
     .search-progress-track {
       width: 100%; height: 1px;
       background: rgba(184,115,51,0.15);
@@ -405,6 +418,12 @@ function init() {
   progressWrap.className = 'search-progress'
   progressWrap.hidden = true
 
+  const progressHeader = document.createElement('div')
+  progressHeader.className = 'search-progress-header'
+  const progressPct = document.createElement('span')
+  progressPct.className = 'search-progress-pct'
+  progressHeader.appendChild(progressPct)
+
   const progressTrack = document.createElement('div')
   progressTrack.className = 'search-progress-track'
   const progressFill = document.createElement('div')
@@ -414,6 +433,7 @@ function init() {
   const progressMsg = document.createElement('div')
   progressMsg.className = 'search-progress-msg'
 
+  progressWrap.appendChild(progressHeader)
   progressWrap.appendChild(progressTrack)
   progressWrap.appendChild(progressMsg)
 
@@ -471,7 +491,7 @@ function init() {
       return
     }
 
-    const prog = startProgress(progressWrap, progressFill, progressMsg, SEARCH_MESSAGES)
+    const prog = startProgress(progressWrap, progressFill, progressMsg, SEARCH_MESSAGES, progressPct)
     const identityPack = window.ORBIT_IDENTITY
       || (() => { try { return JSON.parse(localStorage.getItem('orbit_identity') || 'null') } catch { return null } })()
     const body = { query, ewsStory: ewsArea.value.trim(), ...(identityPack ? { identityPack } : {}) }
