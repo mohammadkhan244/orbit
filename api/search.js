@@ -22,7 +22,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
-  const { query = '', ewsStory = '' } = req.body ?? {}
+  const { query = '', ewsStory = '', identityPack: clientIdentityPack } = req.body ?? {}
   if (!query.trim()) return res.status(400).json({ error: 'query is required' })
 
   // Rate limit: identical query+story within 60s → 429
@@ -34,11 +34,15 @@ export default async function handler(req, res) {
   }
   recentHashes.set(search_hash, now)
 
-  // Build prompt: interpolate identity pack + query + optional ews_story
-  const identityPack = { ...IDENTITY_PACK, ews_story: ewsStory || IDENTITY_PACK.ews_story }
+  // identityPack from client takes precedence; hardcoded is fallback only
+  const identityPack = {
+    ...(clientIdentityPack || IDENTITY_PACK),
+    ...(ewsStory ? { ews_story: ewsStory } : {}),
+  }
   const systemPrompt = SEARCH_SYSTEM_PROMPT
+    .replace('[USER_NAME]', identityPack.name || 'the user')
     .replace('[IDENTITY_PACK]', JSON.stringify(identityPack, null, 2))
-    .replace('[EWS_STORY]', ewsStory || '')
+    .replace('[EWS_STORY]', identityPack.ews_story || '')
     .replace('[USER_QUERY]', query.trim())
 
   try {

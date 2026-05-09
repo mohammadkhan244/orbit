@@ -404,6 +404,8 @@ function init() {
     }
 
     const prog = startProgress(progressWrap, progressFill, progressMsg, SUGGEST_MESSAGES)
+    const identityPack = window.ORBIT_IDENTITY
+      || (() => { try { return JSON.parse(localStorage.getItem('orbit_identity') || 'null') } catch { return null } })()
     adminLog('Suggest request', { url: '/api/suggest', method: 'POST' })
     const t0 = performance.now()
 
@@ -411,7 +413,7 @@ function init() {
       const res = await fetch('/api/suggest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: JSON.stringify(identityPack ? { identityPack } : {}),
       })
 
       const elapsed = Math.round(performance.now() - t0)

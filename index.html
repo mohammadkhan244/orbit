@@ -67,7 +67,11 @@
       text-transform: uppercase;
       text-decoration: none;
       user-select: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
     }
+    .nav-atom { flex-shrink: 0; }
 
     .nav-links {
       display: flex;
@@ -201,7 +205,15 @@
 <body>
 
   <nav>
-    <a class="nav-wordmark" data-view="orbit">ORBIT</a>
+    <a class="nav-wordmark" data-view="orbit">
+      <svg class="nav-atom" width="20" height="20" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="16" r="2.8" fill="#b87333"/>
+        <ellipse cx="16" cy="16" rx="13" ry="4.5" fill="none" stroke="#b87333" stroke-width="1.3"/>
+        <ellipse cx="16" cy="16" rx="13" ry="4.5" fill="none" stroke="#b87333" stroke-width="1.3" transform="rotate(60 16 16)"/>
+        <ellipse cx="16" cy="16" rx="13" ry="4.5" fill="none" stroke="#b87333" stroke-width="1.3" transform="rotate(120 16 16)"/>
+      </svg>
+      ORBIT
+    </a>
     <ul class="nav-links">
       <li><a data-view="orbit"  class="active">ORBIT</a></li>
       <li><a data-view="search">SEARCH</a></li>
@@ -226,6 +238,13 @@
 
     // Guest mode: ?guest=true limits to 1 search + 1 suggest then captures email
     window.ORBIT_GUEST = new URLSearchParams(location.search).get('guest') === 'true'
+
+    // Session gate: resolved by onboarding-view.js when identity is ready
+    ;(function() {
+      var _res
+      window.ORBIT_SESSION_PROMISE = new Promise(function(r) { _res = r })
+      window._orbitSessionResolve = _res
+    })()
 
     window.showGuestModal = function() {
       if (document.getElementById('guest-modal')) return
@@ -305,6 +324,7 @@
     })
   </script>
 
+  <script type="module" src="/frontend/onboarding-view.js"></script>
   <script type="module" src="/frontend/orbit-view.js"></script>
   <script type="module" src="/frontend/search-view.js"></script>
   <script type="module" src="/frontend/suggest-view.js"></script>

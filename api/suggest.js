@@ -21,7 +21,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
-  const { ewsStory = '' } = req.body ?? {}
+  const { ewsStory = '', identityPack: clientIdentityPack } = req.body ?? {}
 
   const search_hash = hashStr('suggest' + ewsStory)
   const now = Date.now()
@@ -31,10 +31,15 @@ export default async function handler(req, res) {
   }
   recentHashes.set(search_hash, now)
 
-  const identityPack = { ...IDENTITY_PACK, ews_story: ewsStory || IDENTITY_PACK.ews_story }
+  // identityPack from client takes precedence; hardcoded is fallback only
+  const identityPack = {
+    ...(clientIdentityPack || IDENTITY_PACK),
+    ...(ewsStory ? { ews_story: ewsStory } : {}),
+  }
   const systemPrompt = SUGGEST_SYSTEM_PROMPT
+    .replace('[USER_NAME]', identityPack.name || 'the user')
     .replace('[IDENTITY_PACK]', JSON.stringify(identityPack, null, 2))
-    .replace('[EWS_STORY]', ewsStory || '')
+    .replace('[EWS_STORY]', identityPack.ews_story || '')
 
   try {
     const response = await client.messages.create({

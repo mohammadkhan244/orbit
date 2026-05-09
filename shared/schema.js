@@ -22,5 +22,8 @@ export const CONTACT_NODE = {
   search_hash: "",
   created_at: "",
   id: "",              // crypto.randomUUID() on creation
-  interaction_log: [] // reserved for future use
+  interaction_log: [], // reserved for future use
+  contact_method: '',  // 'linkedin_dm' | 'substack_comment' | 'email' | 'contact_form' | 'twitter'
+  contact_url: '',     // direct link to contact method
+  reachability_notes: '', // e.g. "Twitter inactive since 2024", "LinkedIn DMs open"
 }

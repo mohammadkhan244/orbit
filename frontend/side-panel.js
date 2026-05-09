@@ -96,6 +96,26 @@ function injectStyles() {
       font-size: 11px; color: rgba(240,236,228,0.22);
       margin-top: 24px;
     }
+
+    .panel-contact-btn {
+      display: inline-block;
+      font-family: 'Courier Prime', monospace;
+      font-size: 11px; letter-spacing: 0.1em;
+      color: #b87333; text-decoration: none;
+      border: 1px solid rgba(184,115,51,0.35);
+      padding: 6px 14px; margin-bottom: 6px;
+      text-transform: uppercase;
+      transition: all 0.15s ease;
+    }
+    .panel-contact-btn:hover {
+      background: rgba(184,115,51,0.08);
+      border-color: #b87333;
+    }
+    .panel-reachability-notes {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px; color: rgba(240,236,228,0.3);
+      line-height: 1.45; margin-bottom: 20px;
+    }
   `
   document.head.appendChild(s)
 }
@@ -120,6 +140,8 @@ export class SidePanel {
         <div class="panel-why"></div>
         <a class="panel-link" target="_blank" rel="noopener noreferrer"></a>
         <span class="panel-platform-badge"></span>
+        <a class="panel-contact-btn" target="_blank" rel="noopener noreferrer" href="#" hidden></a>
+        <div class="panel-reachability-notes"></div>
 
         <label class="panel-field-label">STAGE</label>
         <select class="panel-stage-select">
@@ -167,6 +189,21 @@ export class SidePanel {
     link.href = contact.url
     link.textContent = contact.url
     this.el.querySelector('.panel-platform-badge').textContent = contact.platform
+
+    const METHOD_LABELS = {
+      linkedin_dm: 'LinkedIn', substack_comment: 'Substack',
+      email: 'Email', contact_form: 'Contact Form', twitter: 'Twitter',
+    }
+    const contactBtn = this.el.querySelector('.panel-contact-btn')
+    if (contact.contact_method && contact.contact_url) {
+      contactBtn.textContent = `Contact via ${METHOD_LABELS[contact.contact_method] || contact.contact_method} →`
+      contactBtn.href = contact.contact_url
+      contactBtn.hidden = false
+    } else {
+      contactBtn.hidden = true
+    }
+    this.el.querySelector('.panel-reachability-notes').textContent = contact.reachability_notes || ''
+
     this.el.querySelector('.panel-stage-select').value = contact.status
     this.el.querySelector('.panel-notes').value = contact.notes || ''
     this.el.querySelector('.panel-date-added').textContent = `Added ${contact.date_added}`

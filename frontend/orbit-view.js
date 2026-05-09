@@ -56,7 +56,23 @@ function injectStyles() {
   document.head.appendChild(s)
 }
 
-// ── Persistence helpers ──────────────────────────────────────────────────────
+// ── KV helpers ───────────────────────────────────────────────────────────────
+
+async function kvGetContacts(sessionId) {
+  const r = await fetch(`/api/contacts-kv?sessionId=${encodeURIComponent(sessionId)}`)
+  if (!r.ok) throw new Error(`contacts-kv GET ${r.status}`)
+  return r.json()
+}
+
+function kvSetContacts(sessionId, contacts) {
+  return fetch('/api/contacts-kv', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId, contacts }),
+  })
+}
+
+// ── Persistence helpers ───────────────────────────────────────────────────────
 
 const LS_KEY     = 'orbit_contacts'
 const LS_PENDING = 'orbit_pending'
@@ -137,8 +153,8 @@ async function init() {
 
   injectStyles()
 
-  const res = await fetch('/data/mockContacts.json')
-  let contacts = await res.json()
+  let contacts = []
+  let sessionId = null
 
   // ── progress bar ──
   const progress = document.createElement('div')
@@ -187,19 +203,22 @@ async function init() {
     contacts = contacts.map(c => c.name === id ? { ...c, notes } : c)
   })
 
-  // ── Sheets: load real data on mount, fall back to localStorage ────
+  // ── Load contacts once session is ready (KV → localStorage fallback) ──
   ;(async () => {
     try {
-      const remote = await sheetsGet()
+      const session = await window.ORBIT_SESSION_PROMISE
+      sessionId = session.sessionId
+      window.ORBIT_SESSION_ID = sessionId
+
+      const kvContacts = await kvGetContacts(sessionId)
       const ops    = pending.read()
-      const merged = ops.length > 0 ? applyPending(remote, ops) : remote
+      const merged = ops.length > 0 ? applyPending(kvContacts, ops) : kvContacts
       if (merged.length > 0) {
         contacts = merged
         ls.write(contacts)
         canvas.update(contacts)
         updateProgress(contacts)
       }
-      // Flush any writes that failed in previous sessions
       if (ops.length > 0) flushPending().catch(() => {})
     } catch {
       const stored = ls.read()
@@ -218,6 +237,7 @@ async function init() {
     ls.write(contacts)
     canvas.update(contacts)
     updateProgress(contacts)
+    if (sessionId) kvSetContacts(sessionId, contacts).catch(() => {})
     try {
       await sheetsPost(contact)
     } catch {
@@ -225,12 +245,14 @@ async function init() {
     }
   })
 
-  // ── STAGE_CHANGED: Sheets sync (local state handled above) ───────
+  // ── STAGE_CHANGED: KV + Sheets sync ─────────────────────────────
   document.addEventListener(EVENTS.STAGE_CHANGED, async e => {
     const { id, newStatus } = e.detail
     const contact = contacts.find(c => c.name === id)
     if (!contact?.id) return
+    contacts = contacts.map(c => c.id === contact.id ? { ...c, status: newStatus } : c)
     ls.update(contact.id, { status: newStatus })
+    if (sessionId) kvSetContacts(sessionId, contacts).catch(() => {})
     try {
       await sheetsPatch(contact.id, { status: newStatus })
     } catch {
@@ -238,12 +260,14 @@ async function init() {
     }
   })
 
-  // ── NOTES_UPDATED: Sheets sync ───────────────────────────────────
+  // ── NOTES_UPDATED: KV + Sheets sync ──────────────────────────────
   document.addEventListener(EVENTS.NOTES_UPDATED, async e => {
     const { id, notes } = e.detail
     const contact = contacts.find(c => c.name === id)
     if (!contact?.id) return
+    contacts = contacts.map(c => c.id === contact.id ? { ...c, notes } : c)
     ls.update(contact.id, { notes })
+    if (sessionId) kvSetContacts(sessionId, contacts).catch(() => {})
     try {
       await sheetsPatch(contact.id, { notes })
     } catch {
