@@ -278,6 +278,23 @@
       transition: color 0.15s ease;
     }
     .gp-cancel:hover { color: rgba(240,236,228,0.6); }
+    .gp-back {
+      border: 1px solid rgba(184,115,51,0.45);
+      color: #b87333;
+      background: none;
+      font-family: 'Courier Prime', monospace;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      padding: 8px 20px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .gp-back:hover {
+      background: rgba(184,115,51,0.08);
+      border-color: #b87333;
+      color: #f0ece4;
+    }
     .gp-error {
       font-family: 'DM Sans', sans-serif;
       font-size: 12px; color: rgba(184,115,51,0.65);
@@ -829,7 +846,7 @@
       var headline = document.createElement('div')
       headline.className = 'gp-headline'
       headline.textContent = isAdmin
-        ? 'Viewing active profile. Read only.'
+        ? 'Your profile. Click Edit Profile to make changes.'
         : 'Your identity shapes every search and suggestion.'
 
       var FIELDS = [
@@ -1280,7 +1297,14 @@
           editBtn.className = 'gp-save'
           editBtn.style.marginTop = '8px'
           editBtn.textContent = 'Edit Profile'
-          editBtn.addEventListener('click', () => window.showGravityProfile?.())
+          editBtn.addEventListener('click', () => {
+            const gpView = document.querySelector('[data-view="gravity-profile"]')
+            if (gpView) gpView.click()
+            else {
+              const event = new CustomEvent('orbit:edit-profile', { detail: { editable: true } })
+              document.dispatchEvent(event)
+            }
+          })
           rightEl.appendChild(editBtn)
         }
 
