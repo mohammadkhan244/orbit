@@ -1094,11 +1094,19 @@
         }
       })
 
+      var backBtn = document.createElement('button')
+      backBtn.textContent = '← Not now'
+      backBtn.style.cssText = 'display:block; margin-top:16px; background:none; border:1px solid rgba(184,115,51,0.3); color:rgba(184,115,51,0.6); font-family:Courier Prime,monospace; font-size:11px; letter-spacing:0.18em; text-transform:uppercase; padding:8px 20px; cursor:pointer; width:100%;'
+      backBtn.addEventListener('click', () => overlay.remove())
+      backBtn.addEventListener('mouseenter', () => backBtn.style.borderColor = '#b87333')
+      backBtn.addEventListener('mouseleave', () => backBtn.style.borderColor = 'rgba(184,115,51,0.3)')
+
       card.appendChild(eyebrow)
       card.appendChild(msg)
       card.appendChild(input)
       card.appendChild(btn)
       card.appendChild(status)
+      card.appendChild(backBtn)
       overlay.appendChild(card)
       document.body.appendChild(overlay)
     }
