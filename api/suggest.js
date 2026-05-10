@@ -42,78 +42,38 @@ export default async function handler(req, res) {
     ...(clientIdentityPack || IDENTITY_PACK),
     ...(ewsStory ? { ews_story: ewsStory } : {}),
   }
+  // Slim identity — only what Claude needs
+  const slimIdentity = {
+    name: identityPack.name,
+    mission: identityPack.mission,
+    worldview: identityPack.worldview,
+    north_stars: identityPack.north_stars,
+    ews_story: identityPack.ews_story || ''
+  }
+
   const systemPrompt = SUGGEST_SYSTEM_PROMPT
-    .replace('[USER_NAME]', identityPack.name || 'the user')
-    .replace('[IDENTITY_PACK]', JSON.stringify(identityPack, null, 2))
-    .replace('[EWS_STORY]', identityPack.ews_story || '')
+    .replace('[USER_NAME]', slimIdentity.name || 'the user')
+    .replace('[IDENTITY_PACK]', JSON.stringify(slimIdentity))
+    .replace('[EWS_STORY]', slimIdentity.ews_story)
 
   try {
-    let response = await client.messages.create({
+    const response = await client.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 5000,
+      max_tokens: 2000,
       system: systemPrompt,
       tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-      messages: [{ role: 'user', content: 'Find proactive suggestions as instructed.' }],
+      messages: [{ role: 'user', content: 'Return the JSON only. No prose.' }],
     })
 
-    if (response.stop_reason === 'tool_use') {
-      const messages = [
-        { role: 'user', content: 'Find proactive suggestions as instructed.' },
-        { role: 'assistant', content: response.content },
-      ]
-      const toolResults = response.content
-        .filter(b => b.type === 'tool_use')
-        .map(b => ({ type: 'tool_result', tool_use_id: b.id, content: b.input?.query || '' }))
-      messages.push({ role: 'user', content: toolResults })
-      const finalResponse = await client.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 5000,
-        system: systemPrompt,
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-        messages,
-      })
-      response = finalResponse
-    }
-
-    let raw = response.content
+    const raw = response.content
       .filter(b => b.type === 'text')
       .map(b => b.text)
       .join('')
-    console.log('[suggest] RAW:', raw.slice(0, 300))
 
-    // If response contains no JSON, force a final JSON-only turn
-    if (!raw.includes('{')) {
-      const forcedMessages = [
-        { role: 'user', content: 'Find proactive suggestions as instructed.' },
-        { role: 'assistant', content: response.content },
-      ]
-      const toolResults = response.content
-        .filter(b => b.type === 'tool_use')
-        .map(b => ({ type: 'tool_result', tool_use_id: b.id, content: b.input?.query || '' }))
-      if (toolResults.length) forcedMessages.push({ role: 'user', content: toolResults })
-      forcedMessages.push({ role: 'user', content: 'Now return ONLY the JSON object. No prose. No explanation. Start with { and end with }.' })
-      const forcedResponse = await client.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 3000,
-        system: systemPrompt,
-        messages: forcedMessages,
-      })
-      raw = forcedResponse.content
-        .filter(b => b.type === 'text')
-        .map(b => b.text)
-        .join('')
-      console.log('[suggest] FORCED RAW:', raw.slice(0, 300))
-    }
-
-    let parsed
-    try {
-      parsed = JSON.parse(raw)
-    } catch {
-      const start = raw.indexOf('{')
-      const end = raw.lastIndexOf('}')
-      if (start === -1 || end === -1) throw new Error('No JSON found in response')
-      parsed = JSON.parse(raw.slice(start, end + 1))
-    }
+    const start = raw.indexOf('{')
+    const end = raw.lastIndexOf('}')
+    if (start === -1 || end === -1) throw new Error('No JSON found in response')
+    const parsed = JSON.parse(raw.slice(start, end + 1))
 
     kv.incr('stats:suggest:total').catch(() => {})
     if (isGuest) kv.incr('stats:guests:total').catch(() => {})

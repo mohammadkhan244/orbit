@@ -45,10 +45,19 @@ export default async function handler(req, res) {
     ...(clientIdentityPack || IDENTITY_PACK),
     ...(ewsStory ? { ews_story: ewsStory } : {}),
   }
+  // Slim identity — only what Claude needs
+  const slimIdentity = {
+    name: identityPack.name,
+    mission: identityPack.mission,
+    worldview: identityPack.worldview,
+    north_stars: identityPack.north_stars,
+    ews_story: identityPack.ews_story || ''
+  }
+
   const systemPrompt = SEARCH_SYSTEM_PROMPT
-    .replace('[USER_NAME]', identityPack.name || 'the user')
-    .replace('[IDENTITY_PACK]', JSON.stringify(identityPack, null, 2))
-    .replace('[EWS_STORY]', identityPack.ews_story || '')
+    .replace('[USER_NAME]', slimIdentity.name || 'the user')
+    .replace('[IDENTITY_PACK]', JSON.stringify(slimIdentity))
+    .replace('[EWS_STORY]', slimIdentity.ews_story)
     .replace('[USER_QUERY]', query.trim())
 
   try {
