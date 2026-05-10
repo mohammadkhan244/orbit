@@ -42,6 +42,15 @@ export class OrbitCanvas {
     this.contacts = []
     this.svg = null
     this._ro = new ResizeObserver(() => this._render())
+
+    document.addEventListener('orbit:stage-changed', e => {
+      const { id, newStatus } = e.detail
+      const updated = this.contacts.map(c =>
+        (c.id === id || c.name === id) ? { ...c, status: newStatus } : c
+      )
+      const changed = updated.some((c, i) => c !== this.contacts[i])
+      if (changed) { this.contacts = updated; this._render() }
+    })
   }
 
   mount(contacts) {
