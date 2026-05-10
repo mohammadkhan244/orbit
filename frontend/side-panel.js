@@ -165,14 +165,27 @@ export class SidePanel {
       const newStatus = e.target.value
       this._current = { ...this._current, status: newStatus }
       document.dispatchEvent(new CustomEvent('orbit:stage-changed', {
-        detail: { id: this._current.name, newStatus }
+        detail: { id: this._current.id, newStatus }
       }))
+
+      const sessionId = localStorage.getItem('orbit_session_id')
+      if (sessionId && this._current.id) {
+        fetch('/api/contacts-kv', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId,
+            contactId: this._current.id,
+            updates: { status: newStatus }
+          })
+        }).catch(() => {})
+      }
     })
 
     el.querySelector('.panel-notes').addEventListener('blur', e => {
       if (!this._current) return
       document.dispatchEvent(new CustomEvent('orbit:notes-updated', {
-        detail: { id: this._current.name, notes: e.target.value }
+        detail: { id: this._current.id, notes: e.target.value }
       }))
       const sessionId = localStorage.getItem('orbit_session_id')
       if (sessionId) {
