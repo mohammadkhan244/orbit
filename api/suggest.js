@@ -75,11 +75,36 @@ export default async function handler(req, res) {
       response = finalResponse
     }
 
-    const raw = response.content
+    let raw = response.content
       .filter(b => b.type === 'text')
       .map(b => b.text)
       .join('')
     console.log('[suggest] RAW:', raw.slice(0, 300))
+
+    // If response contains no JSON, force a final JSON-only turn
+    if (!raw.includes('{')) {
+      const forcedMessages = [
+        { role: 'user', content: 'Find proactive suggestions as instructed.' },
+        { role: 'assistant', content: response.content },
+      ]
+      const toolResults = response.content
+        .filter(b => b.type === 'tool_use')
+        .map(b => ({ type: 'tool_result', tool_use_id: b.id, content: b.input?.query || '' }))
+      if (toolResults.length) forcedMessages.push({ role: 'user', content: toolResults })
+      forcedMessages.push({ role: 'user', content: 'Now return ONLY the JSON object. No prose. No explanation. Start with { and end with }.' })
+      const forcedResponse = await client.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 3000,
+        system: systemPrompt,
+        messages: forcedMessages,
+      })
+      raw = forcedResponse.content
+        .filter(b => b.type === 'text')
+        .map(b => b.text)
+        .join('')
+      console.log('[suggest] FORCED RAW:', raw.slice(0, 300))
+    }
+
     let parsed
     try {
       parsed = JSON.parse(raw)
