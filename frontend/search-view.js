@@ -1,9 +1,8 @@
 const SEARCH_MESSAGES = [
-  'Mapping your identity profile...',
-  'Scanning active science communicators...',
-  'Cross-referencing publication overlap...',
-  'Surfacing reachable moonshots...',
-  'Ranking by proximity to your work...',
+  'Reading your gravity profile...',
+  'Searching for people who match your query...',
+  'Cross-referencing with your identity...',
+  'Checking reachability...',
   'Building your results...',
 ]
 
@@ -492,9 +491,7 @@ function init() {
     }
 
     const prog = startProgress(progressWrap, progressFill, progressMsg, SEARCH_MESSAGES, progressPct)
-    const identityPack = window.ORBIT_IDENTITY
-      || (() => { try { return JSON.parse(localStorage.getItem('orbit_identity') || 'null') } catch { return null } })()
-    const body = { query, ewsStory: ewsArea.value.trim(), isGuest: !!window.ORBIT_GUEST, ...(identityPack ? { identityPack } : {}) }
+    const body = { query, ewsStory: window.ORBIT_IDENTITY?.ews_story || '', identityPack: window.ORBIT_IDENTITY || {}, isGuest: !!window.ORBIT_GUEST }
     adminLog('Search request', { url: '/api/search', method: 'POST', body })
     const t0 = performance.now()
 

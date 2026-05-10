@@ -1,9 +1,9 @@
 const SUGGEST_MESSAGES = [
-  'Reading your identity pack...',
-  'Scanning across science communication, systems thinking, speculative fiction...',
-  'Finding who you haven\'t considered...',
-  'Checking reachability — Substack, LinkedIn, public contact forms...',
-  'Surfacing your blind spots...',
+  'Reading your gravity profile...',
+  'Finding Practitioners — people already doing what you want to build...',
+  'Finding Theorists — people who understand the underlying mechanics...',
+  'Finding Connectors — people who can bridge your work to the bigger moment...',
+  'Checking reachability...',
   'Almost there...',
 ]
 
@@ -424,8 +424,6 @@ function init() {
     }
 
     const prog = startProgress(progressWrap, progressFill, progressMsg, SUGGEST_MESSAGES, progressPct)
-    const identityPack = window.ORBIT_IDENTITY
-      || (() => { try { return JSON.parse(localStorage.getItem('orbit_identity') || 'null') } catch { return null } })()
     adminLog('Suggest request', { url: '/api/suggest', method: 'POST' })
     const t0 = performance.now()
 
@@ -433,7 +431,11 @@ function init() {
       const res = await fetch('/api/suggest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(identityPack ? { identityPack, isGuest: !!window.ORBIT_GUEST } : { isGuest: !!window.ORBIT_GUEST }),
+        body: JSON.stringify({
+          ewsStory: window.ORBIT_IDENTITY?.ews_story || '',
+          identityPack: window.ORBIT_IDENTITY || {},
+          isGuest: !!window.ORBIT_GUEST,
+        }),
       })
 
       const elapsed = Math.round(performance.now() - t0)

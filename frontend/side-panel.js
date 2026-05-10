@@ -174,6 +174,18 @@ export class SidePanel {
       document.dispatchEvent(new CustomEvent('orbit:notes-updated', {
         detail: { id: this._current.name, notes: e.target.value }
       }))
+      const sessionId = localStorage.getItem('orbit_session_id')
+      if (sessionId) {
+        fetch('/api/contacts-kv', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId,
+            contactId: this._current.id,
+            updates: { notes: e.target.value.trim() }
+          })
+        }).catch(() => {})
+      }
     })
 
     this.container.appendChild(el)
