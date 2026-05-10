@@ -124,14 +124,27 @@ function injectStyles() {
       margin: 36px 0 24px;
     }
     .return-link {
-      background: none; border: none;
-      color: rgba(184,115,51,0.5);
+      background: none; border: 1px solid rgba(184,115,51,0.45);
+      color: #b87333;
       font-family: 'Courier Prime', monospace;
-      font-size: 11px; letter-spacing: 0.12em;
+      font-size: 11px; letter-spacing: 0.18em;
+      text-transform: uppercase;
+      cursor: pointer; padding: 10px 28px;
+      display: inline-block; margin-top: 16px;
+      transition: background 0.15s ease, border-color 0.15s ease;
+      box-sizing: border-box;
+    }
+    .return-link:hover { background: rgba(184,115,51,0.08); border-color: #b87333; }
+    .return-back {
+      background: none; border: none;
+      color: rgba(184,115,51,0.65);
+      font-family: 'Courier Prime', monospace;
+      font-size: 11px; letter-spacing: 0.10em;
       cursor: pointer; padding: 0; display: block;
+      margin-bottom: 28px;
       transition: color 0.15s ease;
     }
-    .return-link:hover { color: rgba(184,115,51,0.85); }
+    .return-back:hover { color: rgba(184,115,51,1); }
     .return-heading {
       font-family: 'Courier Prime', monospace;
       font-size: clamp(18px, 4vw, 24px); font-weight: 400;
@@ -300,7 +313,18 @@ function buildWelcomeScreen(onProceed) {
   const returnLink = document.createElement('button')
   returnLink.className = 'return-link'
   returnLink.textContent = 'Already have an orbit? Return to it →'
-  returnLink.addEventListener('click', () => buildReturnFlow(inner, overlay))
+  returnLink.addEventListener('click', () => buildReturnFlow(inner, overlay, restoreWelcome))
+
+  function restoreWelcome() {
+    inner.innerHTML = ''
+    inner.appendChild(eyebrow)
+    inner.appendChild(heading)
+    inner.appendChild(p1)
+    inner.appendChild(p2)
+    inner.appendChild(cta)
+    inner.appendChild(divider)
+    inner.appendChild(returnLink)
+  }
 
   inner.appendChild(eyebrow)
   inner.appendChild(heading)
@@ -315,8 +339,16 @@ function buildWelcomeScreen(onProceed) {
 
 // ── Return flow ──────────────────────────────────────────────────────────────
 
-function buildReturnFlow(inner, overlay) {
+function buildReturnFlow(inner, overlay, onBack) {
   inner.innerHTML = ''
+
+  if (onBack) {
+    const backBtn = document.createElement('button')
+    backBtn.className = 'return-back'
+    backBtn.textContent = '← Back'
+    backBtn.addEventListener('click', onBack)
+    inner.appendChild(backBtn)
+  }
 
   const eyebrow = document.createElement('div')
   eyebrow.className = 'onboarding-eyebrow'
