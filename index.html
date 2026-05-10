@@ -391,30 +391,45 @@
     /* ── APERTURE VIEW ── */
     .aperture-wrap {
       height: 100%; overflow-y: auto;
-      padding: 56px 64px 80px;
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
     }
-    @media (max-width: 700px) {
-      .aperture-wrap { padding: 40px 24px 80px; }
-    }
-    .aperture-inner { max-width: 560px; margin: 0 auto; }
+    .aperture-inner { max-width: 640px; width: 100%; }
     .aperture-eyebrow {
       font-family: 'Courier Prime', monospace;
-      font-size: 11px; letter-spacing: 0.2em;
-      color: rgba(240,236,228,0.3);
+      font-size: 10px; letter-spacing: 0.22em;
+      color: rgba(184,115,51,0.5);
       text-transform: uppercase;
-      margin-bottom: 24px;
+      margin-bottom: 16px;
     }
     .aperture-heading {
       font-family: 'Courier Prime', monospace;
-      font-size: 32px; font-weight: 400;
-      color: rgba(240,236,228,0.72);
-      line-height: 1.3; margin-bottom: 20px;
+      font-size: 48px; font-weight: 700;
+      color: #b87333;
+      line-height: 1.1; margin-bottom: 20px;
+      letter-spacing: 0.06em;
+    }
+    .aperture-subheading {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 18px; font-style: italic;
+      color: rgba(240,236,228,0.7);
+      line-height: 1.5; margin-bottom: 36px;
     }
     .aperture-body {
       font-family: 'DM Sans', sans-serif;
-      font-size: 15px; color: rgba(240,236,228,0.5);
-      line-height: 1.7; margin-bottom: 52px;
-      max-width: 420px;
+      font-size: 15px; color: rgba(240,236,228,0.6);
+      line-height: 1.7; margin-bottom: 20px;
+    }
+    .aperture-closing {
+      font-family: 'Courier Prime', monospace;
+      font-size: 14px; font-style: italic;
+      color: #b87333;
+      line-height: 1.5; margin-bottom: 40px;
+    }
+    .aperture-divider {
+      border: none;
+      border-top: 1px solid rgba(184,115,51,0.2);
+      margin: 0 0 32px;
     }
     .aperture-vote-label {
       font-family: 'Courier Prime', monospace;
@@ -1266,19 +1281,38 @@
 
       const eyebrow = document.createElement('div')
       eyebrow.className = 'aperture-eyebrow'
-      eyebrow.textContent = 'Aperture'
+      eyebrow.textContent = 'COMING SOON'
 
       const heading = document.createElement('div')
       heading.className = 'aperture-heading'
-      heading.textContent = 'Coming soon.'
+      heading.textContent = 'APERTURE'
 
-      const body = document.createElement('div')
-      body.className = 'aperture-body'
-      body.textContent = 'Aperture will show you who in your field is connecting with whom — the invisible topology of your network. Would you use it?'
+      const subheading = document.createElement('div')
+      subheading.className = 'aperture-subheading'
+      subheading.textContent = 'Most people build networks around industry. APERTURE builds networks around attention.'
+
+      const body1 = document.createElement('div')
+      body1.className = 'aperture-body'
+      body1.textContent = "You've noticed something shifting. You can't fully name it yet. But you keep seeing it — in different places, different contexts, different forms."
+
+      const body2 = document.createElement('div')
+      body2.className = 'aperture-body'
+      body2.textContent = 'APERTURE finds the people already watching the same change. Not because they share your profession. Because they share your perception.'
+
+      const body3 = document.createElement('div')
+      body3.className = 'aperture-body'
+      body3.textContent = 'A fiction writer, an epidemiologist, an architect, and a policy analyst can notice the same fracture forming — from completely different vantage points. That collision of perspectives is where the insight lives.'
+
+      const closing = document.createElement('div')
+      closing.className = 'aperture-closing'
+      closing.textContent = 'You are not alone in noticing. You just haven’t found the others yet.'
+
+      const divider = document.createElement('hr')
+      divider.className = 'aperture-divider'
 
       const voteLabel = document.createElement('div')
       voteLabel.className = 'aperture-vote-label'
-      voteLabel.textContent = 'Would you use this?'
+      voteLabel.textContent = 'Should we build this?'
 
       const voteRow = document.createElement('div')
       voteRow.className = 'aperture-vote-row'
@@ -1307,7 +1341,12 @@
 
       inner.appendChild(eyebrow)
       inner.appendChild(heading)
-      inner.appendChild(body)
+      inner.appendChild(subheading)
+      inner.appendChild(body1)
+      inner.appendChild(body2)
+      inner.appendChild(body3)
+      inner.appendChild(closing)
+      inner.appendChild(divider)
       inner.appendChild(voteLabel)
       inner.appendChild(voteRow)
       inner.appendChild(votedMsg)
