@@ -26,6 +26,32 @@ export default async function handler(req, res) {
       }
     }
 
+    if (action === 'stats') {
+      try {
+        const [searches, suggests, orbitsBuilt, contactsAdded, guests, apertureUp, apertureDown] = await Promise.all([
+          kv.get('stats:search:total'),
+          kv.get('stats:suggest:total'),
+          kv.get('stats:orbits:built'),
+          kv.get('stats:contacts:added'),
+          kv.get('stats:guests:total'),
+          kv.get('stats:aperture:up'),
+          kv.get('stats:aperture:down'),
+        ])
+        return res.status(200).json({
+          searches: searches || 0,
+          suggests: suggests || 0,
+          orbitsBuilt: orbitsBuilt || 0,
+          contactsAdded: contactsAdded || 0,
+          guests: guests || 0,
+          apertureUpvotes: apertureUp || 0,
+          apertureDownvotes: apertureDown || 0,
+        })
+      } catch (err) {
+        console.error('[admin-auth] stats GET failed', err)
+        return res.status(502).json({ error: 'KV unavailable', detail: err.message })
+      }
+    }
+
     // action=list (default)
     try {
       const keys = await kv.keys('orbit:identity:*')

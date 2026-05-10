@@ -58,6 +58,8 @@ export default async function handler(req, res) {
         )
       }
 
+      if (sendWelcome) kv.incr('stats:orbits:built').catch(() => {})
+
       console.log('[identity] POST body flags:', { sendWelcome, sendUpdate, hasEmail: !!identity?.email, email: identity?.email })
 
       if (sendWelcome && identity.email && identity.email.includes('@')) {

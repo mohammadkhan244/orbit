@@ -433,7 +433,7 @@ function init() {
       const res = await fetch('/api/suggest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(identityPack ? { identityPack } : {}),
+        body: JSON.stringify(identityPack ? { identityPack, isGuest: !!window.ORBIT_GUEST } : { isGuest: !!window.ORBIT_GUEST }),
       })
 
       const elapsed = Math.round(performance.now() - t0)

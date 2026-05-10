@@ -1,7 +1,13 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { createHash } from 'crypto'
+import { createClient } from '@vercel/kv'
 import { IDENTITY_PACK } from '../shared/schema.js'
 import { SEARCH_SYSTEM_PROMPT } from '../shared/prompts.js'
+
+const kv = createClient({
+  url: process.env.orbit_KV_REST_API_URL,
+  token: process.env.orbit_KV_REST_API_TOKEN,
+})
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -22,7 +28,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
-  const { query = '', ewsStory = '', identityPack: clientIdentityPack } = req.body ?? {}
+  const { query = '', ewsStory = '', identityPack: clientIdentityPack, isGuest } = req.body ?? {}
   if (!query.trim()) return res.status(400).json({ error: 'query is required' })
 
   // Rate limit: identical query+story within 60s → 429
@@ -70,6 +76,8 @@ export default async function handler(req, res) {
     }
     parsed.people?.forEach(p => { p.id = crypto.randomUUID() })
 
+    kv.incr('stats:search:total').catch(() => {})
+    if (isGuest) kv.incr('stats:guests:total').catch(() => {})
     return res.status(200).json({ ...parsed, search_hash })
   } catch (err) {
     console.error('[search]', err)

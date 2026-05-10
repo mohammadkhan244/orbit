@@ -363,9 +363,102 @@
       user-select: none;
     }
 
+    /* ── ADMIN STATS BAR ── */
+    .admin-stats-bar {
+      display: flex;
+      border-bottom: 1px solid rgba(184,115,51,0.10);
+      flex-shrink: 0;
+    }
+    .admin-stat-item {
+      flex: 1; padding: 14px 16px;
+      border-right: 1px solid rgba(184,115,51,0.08);
+      text-align: center;
+    }
+    .admin-stat-item:last-child { border-right: none; }
+    .admin-stat-num {
+      font-family: 'Courier Prime', monospace;
+      font-size: 18px; font-weight: 700;
+      color: #b87333; display: block;
+      margin-bottom: 3px;
+    }
+    .admin-stat-label {
+      font-family: 'Courier Prime', monospace;
+      font-size: 8px; letter-spacing: 0.16em;
+      color: rgba(240,236,228,0.3);
+      text-transform: uppercase;
+    }
+
+    /* ── APERTURE VIEW ── */
+    .aperture-wrap {
+      height: 100%; overflow-y: auto;
+      padding: 56px 64px 80px;
+    }
+    @media (max-width: 700px) {
+      .aperture-wrap { padding: 40px 24px 80px; }
+    }
+    .aperture-inner { max-width: 560px; margin: 0 auto; }
+    .aperture-eyebrow {
+      font-family: 'Courier Prime', monospace;
+      font-size: 11px; letter-spacing: 0.2em;
+      color: rgba(240,236,228,0.3);
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+    .aperture-heading {
+      font-family: 'Courier Prime', monospace;
+      font-size: 32px; font-weight: 400;
+      color: rgba(240,236,228,0.72);
+      line-height: 1.3; margin-bottom: 20px;
+    }
+    .aperture-body {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px; color: rgba(240,236,228,0.5);
+      line-height: 1.7; margin-bottom: 52px;
+      max-width: 420px;
+    }
+    .aperture-vote-label {
+      font-family: 'Courier Prime', monospace;
+      font-size: 10px; letter-spacing: 0.2em;
+      color: rgba(184,115,51,0.55);
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .aperture-vote-row {
+      display: flex; gap: 16px; align-items: center;
+      margin-bottom: 16px;
+    }
+    .aperture-vote-btn {
+      background: none; border: 1px solid rgba(184,115,51,0.3);
+      color: rgba(240,236,228,0.7);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px; padding: 10px 20px;
+      cursor: pointer; border-radius: 2px;
+      transition: all 0.15s ease;
+      display: inline-flex; align-items: center; gap: 10px;
+    }
+    .aperture-vote-btn:hover:not(:disabled) {
+      background: rgba(184,115,51,0.08);
+      border-color: #b87333;
+    }
+    .aperture-vote-btn.voted {
+      border-color: rgba(184,115,51,0.6);
+      background: rgba(184,115,51,0.1);
+    }
+    .aperture-vote-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .aperture-vote-count {
+      font-family: 'Courier Prime', monospace;
+      font-size: 12px; color: rgba(240,236,228,0.35);
+      letter-spacing: 0.1em;
+    }
+    .aperture-voted-msg {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px; color: rgba(184,115,51,0.6);
+      margin-top: 4px; min-height: 1.4em;
+    }
+
     /* ── ADMIN VIEW ── */
-    #admin-view { padding: 0; overflow: hidden; }
-    .admin-layout { display: flex; height: calc(100vh - 56px); }
+    #admin-view { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+    .admin-layout { display: flex; flex: 1; min-height: 0; }
     .admin-left {
       width: 300px; flex-shrink: 0;
       overflow-y: auto;
@@ -508,6 +601,7 @@
       <li><a data-view="orbit"  class="active">ORBIT</a></li>
       <li><a data-view="search">SEARCH</a></li>
       <li><a data-view="suggest">SUGGEST</a></li>
+      <li><a data-view="aperture">APERTURE</a></li>
       <li><a data-view="admin" id="admin-nav-link" hidden>ADMIN</a></li>
       <li><button id="gravity-profile-link">Gravity Profile</button></li>
     </ul>
@@ -519,6 +613,7 @@
     <div id="search-view"  class="view"></div>
     <div id="suggest-view" class="view"></div>
     <div id="admin-view"   class="view"></div>
+    <div id="aperture-view" class="view"></div>
   </main>
 
   <script>
@@ -926,6 +1021,7 @@
         e.preventDefault()
         activate(link.dataset.view)
         if (link.dataset.view === 'admin' && window.ORBIT_ADMIN) initAdminView()
+        if (link.dataset.view === 'aperture') initApertureView()
       })
     })
 
@@ -939,6 +1035,39 @@
       adminLoaded = true
       const container = document.getElementById('admin-view')
       container.innerHTML = ''
+
+      // Stats bar
+      const statsBar = document.createElement('div')
+      statsBar.className = 'admin-stats-bar'
+      container.appendChild(statsBar)
+      const code = sessionStorage.getItem('orbit_admin_code') || ''
+      fetch(`/api/admin-auth?action=stats&code=${encodeURIComponent(code)}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(stats => {
+          if (!stats) return
+          const items = [
+            { num: stats.orbitsBuilt,    label: 'Orbits Built' },
+            { num: stats.searches,       label: 'Searches' },
+            { num: stats.suggests,       label: 'Suggests' },
+            { num: stats.contactsAdded,  label: 'Contacts' },
+            { num: stats.guests,         label: 'Guests' },
+            { num: `${stats.apertureUpvotes}/${stats.apertureDownvotes}`, label: 'Aperture' },
+          ]
+          items.forEach(item => {
+            const el = document.createElement('div')
+            el.className = 'admin-stat-item'
+            const num = document.createElement('span')
+            num.className = 'admin-stat-num'
+            num.textContent = item.num
+            const label = document.createElement('span')
+            label.className = 'admin-stat-label'
+            label.textContent = item.label
+            el.appendChild(num)
+            el.appendChild(label)
+            statsBar.appendChild(el)
+          })
+        })
+        .catch(() => { statsBar.remove() })
 
       const layout = document.createElement('div')
       layout.className = 'admin-layout'
@@ -970,7 +1099,6 @@
       container.appendChild(layout)
 
       try {
-        const code = sessionStorage.getItem('orbit_admin_code') || ''
         const r = await fetch(`/api/admin-auth?action=list&code=${encodeURIComponent(code)}`)
         if (!r.ok) throw new Error('Unauthorized')
         const { profiles } = await r.json()
@@ -1122,6 +1250,109 @@
         errEl.className = 'admin-empty'
         errEl.textContent = 'Failed to load profile.'
         rightEl.appendChild(errEl)
+      }
+    }
+
+    let apertureLoaded = false
+    function initApertureView() {
+      if (apertureLoaded) return
+      apertureLoaded = true
+      const container = document.getElementById('aperture-view')
+
+      const wrap = document.createElement('div')
+      wrap.className = 'aperture-wrap'
+      const inner = document.createElement('div')
+      inner.className = 'aperture-inner'
+
+      const eyebrow = document.createElement('div')
+      eyebrow.className = 'aperture-eyebrow'
+      eyebrow.textContent = 'Aperture'
+
+      const heading = document.createElement('div')
+      heading.className = 'aperture-heading'
+      heading.textContent = 'Coming soon.'
+
+      const body = document.createElement('div')
+      body.className = 'aperture-body'
+      body.textContent = 'Aperture will show you who in your field is connecting with whom — the invisible topology of your network. Would you use it?'
+
+      const voteLabel = document.createElement('div')
+      voteLabel.className = 'aperture-vote-label'
+      voteLabel.textContent = 'Would you use this?'
+
+      const voteRow = document.createElement('div')
+      voteRow.className = 'aperture-vote-row'
+
+      const upCount = document.createElement('span')
+      upCount.className = 'aperture-vote-count'
+      upCount.textContent = '—'
+      const upBtn = document.createElement('button')
+      upBtn.className = 'aperture-vote-btn'
+      upBtn.appendChild(document.createTextNode('👍 '))
+      upBtn.appendChild(upCount)
+
+      const downCount = document.createElement('span')
+      downCount.className = 'aperture-vote-count'
+      downCount.textContent = '—'
+      const downBtn = document.createElement('button')
+      downBtn.className = 'aperture-vote-btn'
+      downBtn.appendChild(document.createTextNode('👎 '))
+      downBtn.appendChild(downCount)
+
+      const votedMsg = document.createElement('div')
+      votedMsg.className = 'aperture-voted-msg'
+
+      voteRow.appendChild(upBtn)
+      voteRow.appendChild(downBtn)
+
+      inner.appendChild(eyebrow)
+      inner.appendChild(heading)
+      inner.appendChild(body)
+      inner.appendChild(voteLabel)
+      inner.appendChild(voteRow)
+      inner.appendChild(votedMsg)
+      wrap.appendChild(inner)
+      container.appendChild(wrap)
+
+      const hasVoted = localStorage.getItem('aperture_voted')
+      if (hasVoted) {
+        upBtn.disabled = true
+        downBtn.disabled = true
+        if (hasVoted === 'up') upBtn.classList.add('voted')
+        if (hasVoted === 'down') downBtn.classList.add('voted')
+        votedMsg.textContent = 'Your vote is counted.'
+      }
+
+      fetch('/api/aperture-vote')
+        .then(r => r.json())
+        .then(data => { upCount.textContent = data.up; downCount.textContent = data.down })
+        .catch(() => {})
+
+      async function castVote(vote) {
+        upBtn.disabled = true
+        downBtn.disabled = true
+        try {
+          const r = await fetch('/api/aperture-vote', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ vote }),
+          })
+          const data = await r.json()
+          upCount.textContent = data.up
+          downCount.textContent = data.down
+          localStorage.setItem('aperture_voted', vote)
+          if (vote === 'up') upBtn.classList.add('voted')
+          if (vote === 'down') downBtn.classList.add('voted')
+          votedMsg.textContent = 'Your vote is counted.'
+        } catch {
+          upBtn.disabled = false
+          downBtn.disabled = false
+        }
+      }
+
+      if (!hasVoted) {
+        upBtn.addEventListener('click', () => castVote('up'))
+        downBtn.addEventListener('click', () => castVote('down'))
       }
     }
   </script>

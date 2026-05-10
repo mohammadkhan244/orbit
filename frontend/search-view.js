@@ -494,7 +494,7 @@ function init() {
     const prog = startProgress(progressWrap, progressFill, progressMsg, SEARCH_MESSAGES, progressPct)
     const identityPack = window.ORBIT_IDENTITY
       || (() => { try { return JSON.parse(localStorage.getItem('orbit_identity') || 'null') } catch { return null } })()
-    const body = { query, ewsStory: ewsArea.value.trim(), ...(identityPack ? { identityPack } : {}) }
+    const body = { query, ewsStory: ewsArea.value.trim(), isGuest: !!window.ORBIT_GUEST, ...(identityPack ? { identityPack } : {}) }
     adminLog('Search request', { url: '/api/search', method: 'POST', body })
     const t0 = performance.now()
 

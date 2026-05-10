@@ -1,7 +1,13 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { createHash } from 'crypto'
+import { createClient } from '@vercel/kv'
 import { IDENTITY_PACK } from '../shared/schema.js'
 import { SUGGEST_SYSTEM_PROMPT } from '../shared/prompts.js'
+
+const kv = createClient({
+  url: process.env.orbit_KV_REST_API_URL,
+  token: process.env.orbit_KV_REST_API_TOKEN,
+})
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -21,7 +27,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
-  const { ewsStory = '', identityPack: clientIdentityPack } = req.body ?? {}
+  const { ewsStory = '', identityPack: clientIdentityPack, isGuest } = req.body ?? {}
 
   const search_hash = hashStr('suggest' + ewsStory)
   const now = Date.now()
@@ -65,6 +71,8 @@ export default async function handler(req, res) {
       parsed = JSON.parse(raw.slice(start, end + 1))
     }
 
+    kv.incr('stats:suggest:total').catch(() => {})
+    if (isGuest) kv.incr('stats:guests:total').catch(() => {})
     return res.status(200).json({ ...parsed, search_hash })
   } catch (err) {
     console.error('[suggest]', err)
