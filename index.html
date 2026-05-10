@@ -1857,8 +1857,10 @@
 
       filterInput.addEventListener('input', renderList)
 
-      document.addEventListener('orbit:contact-added', function() { if (isOpen) renderList() })
-      document.addEventListener('orbit:stage-changed', function() { if (isOpen) renderList() })
+      document.addEventListener('orbit:contacts-updated', function(e) {
+        if (e.detail && e.detail.contacts) window.ORBIT_CONTACTS = e.detail.contacts
+        renderList()
+      })
     })()
   </script>
 

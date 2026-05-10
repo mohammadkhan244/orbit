@@ -154,7 +154,13 @@ async function init() {
   injectStyles()
 
   let contacts = []
+  window.ORBIT_CONTACTS = contacts
   let sessionId = null
+
+  function syncGlobal() {
+    window.ORBIT_CONTACTS = contacts
+    document.dispatchEvent(new CustomEvent('orbit:contacts-updated', { detail: { contacts } }))
+  }
 
   // ── progress bar ──
   const progress = document.createElement('div')
@@ -196,11 +202,13 @@ async function init() {
     contacts = contacts.map(c => c.name === id ? { ...c, status: newStatus } : c)
     canvas.update(contacts)
     updateProgress(contacts)
+    syncGlobal()
   })
 
   document.addEventListener('orbit:notes-updated', e => {
     const { id, notes } = e.detail
     contacts = contacts.map(c => c.name === id ? { ...c, notes } : c)
+    syncGlobal()
   })
 
   // ── Load contacts once session is ready (KV → localStorage fallback) ──
@@ -218,6 +226,7 @@ async function init() {
         ls.write(contacts)
         canvas.update(contacts)
         updateProgress(contacts)
+        syncGlobal()
       }
       if (ops.length > 0) flushPending().catch(() => {})
     } catch {
@@ -226,6 +235,7 @@ async function init() {
         contacts = stored
         canvas.update(contacts)
         updateProgress(contacts)
+        syncGlobal()
       }
     }
   })()
@@ -237,6 +247,7 @@ async function init() {
     ls.write(contacts)
     canvas.update(contacts)
     updateProgress(contacts)
+    syncGlobal()
     if (sessionId) kvSetContacts(sessionId, contacts).catch(() => {})
     try {
       await sheetsPost(contact)
@@ -252,6 +263,7 @@ async function init() {
     if (!contact?.id) return
     contacts = contacts.map(c => c.id === contact.id ? { ...c, status: newStatus } : c)
     ls.update(contact.id, { status: newStatus })
+    syncGlobal()
     if (sessionId) kvSetContacts(sessionId, contacts).catch(() => {})
     try {
       await sheetsPatch(contact.id, { status: newStatus })
@@ -267,6 +279,7 @@ async function init() {
     if (!contact?.id) return
     contacts = contacts.map(c => c.id === contact.id ? { ...c, notes } : c)
     ls.update(contact.id, { notes })
+    syncGlobal()
     if (sessionId) kvSetContacts(sessionId, contacts).catch(() => {})
     try {
       await sheetsPatch(contact.id, { notes })
