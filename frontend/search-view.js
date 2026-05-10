@@ -495,10 +495,20 @@ function init() {
       }
     }
 
+    const identity = window.ORBIT_IDENTITY || {}
+    if (!identity.name || !identity.mission) {
+      searchBtn.disabled = false
+      errorEl.innerHTML = ''
+      errorEl.appendChild(document.createTextNode("Your Gravity Profile needs a name and mission before ORBIT can find your people. Click 'Gravity Profile' in the nav to complete it."))
+      errorEl.hidden = false
+      return
+    }
+
     const prog = startProgress(progressWrap, progressFill, progressMsg, SEARCH_MESSAGES, progressPct)
     const body = { query, ewsStory: window.ORBIT_IDENTITY?.ews_story || '', identityPack: window.ORBIT_IDENTITY || {}, isGuest: !!window.ORBIT_GUEST }
     adminLog('Search request', { url: '/api/search', method: 'POST', body })
     const t0 = performance.now()
+    let responseStatus = null
 
     try {
       const res = await fetch('/api/search', {
@@ -506,6 +516,7 @@ function init() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       })
+      responseStatus = res.status
 
       const elapsed = Math.round(performance.now() - t0)
 
@@ -548,7 +559,22 @@ function init() {
     } catch (err) {
       prog.hide()
       adminLog('Search error', { message: err.message, _elapsed: Math.round(performance.now() - t0) })
-      errorEl.textContent = err.message
+      const errorMessages = {
+        429: "You've already searched recently. Wait 60 seconds and try again.",
+        500: "Something went wrong on our end. Try again in a moment. If it keeps failing, email mohammadkhan@themohammadkhan.com with the word 'Search'.",
+        503: "ORBIT is temporarily unavailable. Try again in a few minutes.",
+        default: "Search didn't complete. Try a different query or simplify your mission field. Still stuck? Email mohammadkhan@themohammadkhan.com"
+      }
+      const msg = errorMessages[responseStatus] || errorMessages.default
+      errorEl.innerHTML = ''
+      errorEl.appendChild(document.createTextNode(msg))
+      const copyLink = document.createElement('a')
+      copyLink.textContent = 'Copy details to report this'
+      copyLink.style.cssText = 'display:block; margin-top:8px; font-family:Courier Prime,monospace; font-size:10px; color:#b87333; cursor:pointer; letter-spacing:0.1em;'
+      copyLink.addEventListener('click', () => {
+        navigator.clipboard.writeText('Search failed — Status: ' + responseStatus + ' — Time: ' + new Date().toISOString() + ' — Profile: ' + (window.ORBIT_IDENTITY?.name || 'unknown'))
+      })
+      errorEl.appendChild(copyLink)
       errorEl.hidden = false
     } finally {
       searchBtn.disabled = false

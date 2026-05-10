@@ -428,9 +428,19 @@ function init() {
       }
     }
 
+    const identity = window.ORBIT_IDENTITY || {}
+    if (!identity.name || !identity.mission) {
+      suggestBtn.disabled = false
+      errorEl.innerHTML = ''
+      errorEl.appendChild(document.createTextNode("Your Gravity Profile needs a name and mission before ORBIT can find your people. Click 'Gravity Profile' in the nav to complete it."))
+      errorEl.hidden = false
+      return
+    }
+
     const prog = startProgress(progressWrap, progressFill, progressMsg, SUGGEST_MESSAGES, progressPct)
     adminLog('Suggest request', { url: '/api/suggest', method: 'POST' })
     const t0 = performance.now()
+    let responseStatus = null
 
     try {
       const res = await fetch('/api/suggest', {
@@ -442,6 +452,7 @@ function init() {
           isGuest: !!window.ORBIT_GUEST,
         }),
       })
+      responseStatus = res.status
 
       const elapsed = Math.round(performance.now() - t0)
 
@@ -504,7 +515,22 @@ function init() {
     } catch (err) {
       prog.hide()
       adminLog('Suggest error', { message: err.message, _elapsed: Math.round(performance.now() - t0) })
-      errorEl.textContent = err.message
+      const errorMessages = {
+        429: "You've already fetched suggestions recently. Wait 60 seconds and try again.",
+        500: "Something went wrong on our end. Try again in a moment. If it keeps failing, email mohammadkhan@themohammadkhan.com with the word 'Suggest'.",
+        503: "ORBIT is temporarily unavailable. Try again in a few minutes.",
+        default: "Suggest didn't complete. This sometimes happens with complex profiles. Try simplifying your mission field and searching again. Still stuck? Email mohammadkhan@themohammadkhan.com"
+      }
+      const msg = errorMessages[responseStatus] || errorMessages.default
+      errorEl.innerHTML = ''
+      errorEl.appendChild(document.createTextNode(msg))
+      const copyLink = document.createElement('a')
+      copyLink.textContent = 'Copy details to report this'
+      copyLink.style.cssText = 'display:block; margin-top:8px; font-family:Courier Prime,monospace; font-size:10px; color:#b87333; cursor:pointer; letter-spacing:0.1em;'
+      copyLink.addEventListener('click', () => {
+        navigator.clipboard.writeText('Suggest failed — Status: ' + responseStatus + ' — Time: ' + new Date().toISOString() + ' — Profile: ' + (window.ORBIT_IDENTITY?.name || 'unknown'))
+      })
+      errorEl.appendChild(copyLink)
       errorEl.hidden = false
     } finally {
       suggestBtn.disabled = false
