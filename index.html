@@ -880,7 +880,7 @@
         } else {
           input.value = identity[f.key] || ''
         }
-        if (isAdmin) input.readOnly = true
+        if (isAdmin && sessionId !== 'admin') input.readOnly = true
         inputs[f.key] = input
         fieldEl.appendChild(label)
         fieldEl.appendChild(input)
@@ -892,7 +892,7 @@
       var errorEl = document.createElement('div')
       errorEl.className = 'gp-error'
 
-      if (!isAdmin) {
+      if (!isAdmin || sessionId === 'admin') {
         var saveBtn = document.createElement('button')
         saveBtn.className = 'gp-save'
         saveBtn.textContent = 'Save Profile'
@@ -1295,7 +1295,7 @@
         if (sessionId === 'admin') {
           const editBtn = document.createElement('button')
           editBtn.className = 'gp-save'
-          editBtn.style.marginTop = '8px'
+          editBtn.style.cssText = 'margin-top:16px; width:100%; border:1px solid #b87333; color:#b87333; background:none; font-family:Courier Prime,monospace; font-size:12px; letter-spacing:0.18em; text-transform:uppercase; padding:12px 24px; cursor:pointer;'
           editBtn.textContent = 'Edit Profile'
           editBtn.addEventListener('click', () => {
             const gpView = document.querySelector('[data-view="gravity-profile"]')
