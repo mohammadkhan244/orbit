@@ -555,6 +555,23 @@
     /* ── ADMIN VIEW ── */
     #admin-view { padding: 0; overflow: hidden; }
     #admin-view.active { display: flex; flex-direction: column; }
+
+    /* ── STAGE DROPDOWN ── */
+    .panel-stage-select {
+      background: #0a0a0a !important;
+      color: #f0ece4 !important;
+      border: 1px solid rgba(184,115,51,0.25) !important;
+      font-family: 'DM Sans', sans-serif !important;
+      font-size: 13px !important;
+      padding: 8px 10px !important;
+      width: 100% !important;
+      cursor: pointer !important;
+      -webkit-appearance: none !important;
+      appearance: none !important;
+    }
+    .panel-stage-select:hover { border-color: #b87333 !important; color: #b87333 !important; }
+    .panel-stage-select:focus { outline: none !important; border-color: #b87333 !important; }
+    .panel-stage-select option { background: #0a0a0a; color: #f0ece4; }
     .admin-layout { display: flex; flex: 1; min-height: 0; }
     .admin-left {
       width: 300px; flex-shrink: 0;
@@ -1046,6 +1063,24 @@
     window.showGuestModal = function() {
       if (document.getElementById('guest-modal')) return
 
+      const now = Date.now()
+      const WEEK = 7 * 24 * 60 * 60 * 1000
+      const lastSearch = parseInt(localStorage.getItem('guest_search_timestamp') || '0')
+      const lastSuggest = parseInt(localStorage.getItem('guest_suggest_timestamp') || '0')
+      const searchUsed = now - lastSearch < WEEK
+      const suggestUsed = now - lastSuggest < WEEK
+
+      let msgText
+      if (suggestUsed && !searchUsed) {
+        msgText = 'You\'ve used your free suggestion this week. You have 1 free search remaining.'
+      } else if (searchUsed && !suggestUsed) {
+        msgText = 'You\'ve used your free search this week. You have 1 free suggestion remaining.'
+      } else {
+        msgText = 'You\'ve used your free searches for this week. Leave your email to get early access — your orbit will be waiting exactly where you left off.'
+      }
+
+      const daysLeft = Math.ceil((WEEK - (now - Math.max(lastSearch, lastSuggest))) / (24 * 60 * 60 * 1000))
+
       const overlay = document.createElement('div')
       overlay.id = 'guest-modal'
       overlay.className = 'guest-modal-overlay'
@@ -1059,7 +1094,11 @@
 
       const msg = document.createElement('p')
       msg.className = 'guest-modal-msg'
-      msg.textContent = 'This tool is still under development. If you\'d like access when it\'s ready, leave your email — your orbit will be waiting for you exactly where you left off.'
+      msg.textContent = msgText
+
+      const resetNote = document.createElement('p')
+      resetNote.style.cssText = 'font-family:DM Sans,sans-serif; font-size:12px; color:rgba(240,236,228,0.3); margin-bottom:20px; margin-top:-12px;'
+      resetNote.textContent = 'Resets in ' + daysLeft + ' day' + (daysLeft === 1 ? '' : 's') + '.'
 
       const input = document.createElement('input')
       input.type = 'email'
@@ -1103,6 +1142,7 @@
 
       card.appendChild(eyebrow)
       card.appendChild(msg)
+      card.appendChild(resetNote)
       card.appendChild(input)
       card.appendChild(btn)
       card.appendChild(status)

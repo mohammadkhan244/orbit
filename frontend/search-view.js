@@ -484,10 +484,15 @@ function init() {
     adminPanel.hidden = true
     while (resultsEl.children.length > 1) resultsEl.removeChild(resultsEl.lastChild)
 
-    if (window.ORBIT_GUEST && localStorage.getItem('guest_search_used')) {
-      searchBtn.disabled = false
-      window.showGuestModal?.()
-      return
+    if (window.ORBIT_GUEST) {
+      const now = Date.now()
+      const WEEK = 7 * 24 * 60 * 60 * 1000
+      const lastSearch = parseInt(localStorage.getItem('guest_search_timestamp') || '0')
+      if (now - lastSearch < WEEK) {
+        searchBtn.disabled = false
+        window.showGuestModal?.()
+        return
+      }
     }
 
     const prog = startProgress(progressWrap, progressFill, progressMsg, SEARCH_MESSAGES, progressPct)
@@ -533,7 +538,7 @@ function init() {
           resultsEl.appendChild(card)
         })
         resultsEl.hidden = false
-        if (window.ORBIT_GUEST) localStorage.setItem('guest_search_used', '1')
+        if (window.ORBIT_GUEST) localStorage.setItem('guest_search_timestamp', String(Date.now()))
       }
 
       if (window.ORBIT_ADMIN) {

@@ -417,10 +417,15 @@ function init() {
     adminPanel.hidden = true
     while (resultsEl.children.length > 1) resultsEl.removeChild(resultsEl.lastChild)
 
-    if (window.ORBIT_GUEST && localStorage.getItem('guest_suggest_used')) {
-      suggestBtn.disabled = false
-      window.showGuestModal?.()
-      return
+    if (window.ORBIT_GUEST) {
+      const now = Date.now()
+      const WEEK = 7 * 24 * 60 * 60 * 1000
+      const lastSuggest = parseInt(localStorage.getItem('guest_suggest_timestamp') || '0')
+      if (now - lastSuggest < WEEK) {
+        suggestBtn.disabled = false
+        window.showGuestModal?.()
+        return
+      }
     }
 
     const prog = startProgress(progressWrap, progressFill, progressMsg, SUGGEST_MESSAGES, progressPct)
@@ -489,7 +494,7 @@ function init() {
         })
 
         resultsEl.hidden = false
-        if (window.ORBIT_GUEST) localStorage.setItem('guest_suggest_used', '1')
+        if (window.ORBIT_GUEST) localStorage.setItem('guest_suggest_timestamp', String(Date.now()))
       }
 
       if (window.ORBIT_ADMIN) {
