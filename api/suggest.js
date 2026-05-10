@@ -48,7 +48,7 @@ export default async function handler(req, res) {
     .replace('[EWS_STORY]', identityPack.ews_story || '')
 
   try {
-    const response = await client.messages.create({
+    let response = await client.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 5000,
       system: systemPrompt,
@@ -56,11 +56,30 @@ export default async function handler(req, res) {
       messages: [{ role: 'user', content: 'Find proactive suggestions as instructed.' }],
     })
 
+    if (response.stop_reason === 'tool_use') {
+      const messages = [
+        { role: 'user', content: 'Find proactive suggestions as instructed.' },
+        { role: 'assistant', content: response.content },
+      ]
+      const toolResults = response.content
+        .filter(b => b.type === 'tool_use')
+        .map(b => ({ type: 'tool_result', tool_use_id: b.id, content: b.input?.query || '' }))
+      messages.push({ role: 'user', content: toolResults })
+      const finalResponse = await client.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 5000,
+        system: systemPrompt,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages,
+      })
+      response = finalResponse
+    }
+
     const raw = response.content
       .filter(b => b.type === 'text')
       .map(b => b.text)
       .join('')
-
+    console.log('[suggest] RAW:', raw.slice(0, 300))
     let parsed
     try {
       parsed = JSON.parse(raw)
