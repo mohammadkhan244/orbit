@@ -46,7 +46,7 @@ export class OrbitCanvas {
     document.addEventListener('orbit:stage-changed', e => {
       const { id, newStatus } = e.detail
       const updated = this.contacts.map(c =>
-        (c.id === id || c.name === id) ? { ...c, status: newStatus } : c
+        c.id === id ? { ...c, status: newStatus } : c
       )
       const changed = updated.some((c, i) => c !== this.contacts[i])
       if (changed) { this.contacts = updated; this._render() }
