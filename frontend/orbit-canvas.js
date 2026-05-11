@@ -60,8 +60,19 @@ export class OrbitCanvas {
   }
 
   update(contacts) {
+    const prev = this.contacts
     this.contacts = contacts
-    this._render()
+
+    const changed = contacts.filter(c => {
+      const old = prev.find(p => p.id === c.id)
+      return old && old.status !== c.status
+    })
+
+    if (changed.length > 0 && contacts.length === prev.length) {
+      this._render()
+    } else {
+      this._render()
+    }
   }
 
   destroy() {
@@ -88,6 +99,7 @@ export class OrbitCanvas {
 
     this.svg?.remove()
     const svg = svgEl('svg', { width, height }, { display: 'block' })
+    svg.style.transition = 'all 0.3s ease'
     this.svg = svg
 
     // ── rings ──
@@ -145,6 +157,7 @@ export class OrbitCanvas {
 
       const g = document.createElementNS(NS, 'g')
       g.style.cursor = 'pointer'
+      g.style.transition = 'transform 0.6s ease'
 
       // subtle pulse halo
       const halo = svgEl('circle', { cx: nx, cy: ny, r: 24, fill: 'rgba(184,115,51,0.09)' })
