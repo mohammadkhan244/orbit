@@ -199,7 +199,7 @@ async function init() {
   // ── event wiring ──
   document.addEventListener('orbit:stage-changed', e => {
     const { id, newStatus } = e.detail
-    contacts = contacts.map(c => c.name === id ? { ...c, status: newStatus } : c)
+    contacts = contacts.map(c => c.id === id ? { ...c, status: newStatus } : c)
     canvas.update(contacts)
     updateProgress(contacts)
     syncGlobal()
@@ -207,7 +207,7 @@ async function init() {
 
   document.addEventListener('orbit:notes-updated', e => {
     const { id, notes } = e.detail
-    contacts = contacts.map(c => c.name === id ? { ...c, notes } : c)
+    contacts = contacts.map(c => c.id === id ? { ...c, notes } : c)
     syncGlobal()
   })
 
