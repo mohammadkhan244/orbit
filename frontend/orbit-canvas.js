@@ -192,7 +192,8 @@ export class OrbitCanvas {
         node.setAttribute('stroke', COLORS.accent)
       })
       g.addEventListener('click', () => {
-        document.dispatchEvent(new CustomEvent('orbit:node-selected', { detail: { ...contact } }))
+        const live = (window.ORBIT_CONTACTS || []).find(c => c.id === contact.id) || contact
+        document.dispatchEvent(new CustomEvent('orbit:node-selected', { detail: { ...live } }))
       })
 
       svg.appendChild(g)
