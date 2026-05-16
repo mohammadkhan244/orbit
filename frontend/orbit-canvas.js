@@ -102,6 +102,54 @@ export class OrbitCanvas {
     svg.style.transition = 'all 0.3s ease'
     this.svg = svg
 
+    // ── touch drag state (scoped to this render) ──
+    let dragTarget = null
+    let dragStartClient = null
+
+    svg.addEventListener('touchmove', e => {
+      if (!dragTarget) return
+      e.preventDefault()
+      const touch = e.touches[0]
+      const dx = touch.clientX - dragStartClient.x
+      const dy = touch.clientY - dragStartClient.y
+      dragTarget.g.setAttribute('transform', `translate(${dx},${dy})`)
+    }, { passive: false })
+
+    svg.addEventListener('touchend', e => {
+      if (!dragTarget) return
+      const touch = e.changedTouches[0]
+      const dx = touch.clientX - dragStartClient.x
+      const dy = touch.clientY - dragStartClient.y
+      const { g, contact } = dragTarget
+      dragTarget = null
+      dragStartClient = null
+
+      if (Math.hypot(dx, dy) < 10) {
+        g.removeAttribute('transform')
+        const live = (window.ORBIT_CONTACTS || []).find(c => c.id === contact.id) || contact
+        document.dispatchEvent(new CustomEvent('orbit:node-selected', { detail: { ...live } }))
+        return
+      }
+
+      const rect = svg.getBoundingClientRect()
+      const finalX = touch.clientX - rect.left
+      const finalY = touch.clientY - rect.top
+      const dist = Math.hypot(finalX - cx, finalY - cy)
+
+      let bestRing = 4, bestDiff = Infinity
+      for (const [ring, r] of Object.entries(RING_R)) {
+        const diff = Math.abs(r - dist)
+        if (diff < bestDiff) { bestDiff = diff; bestRing = Number(ring) }
+      }
+
+      const stageEntry = Object.entries(STAGES).find(([, s]) => s.ring === bestRing)
+      if (stageEntry) {
+        document.dispatchEvent(new CustomEvent('orbit:stage-changed', {
+          detail: { id: contact.id, newStatus: stageEntry[0] }
+        }))
+      }
+    })
+
     // ── rings ──
     const stageEntries = Object.entries(STAGES).sort((a, b) => b[1].ring - a[1].ring)
     for (const [, stage] of stageEntries) {
@@ -195,6 +243,13 @@ export class OrbitCanvas {
         const live = (window.ORBIT_CONTACTS || []).find(c => c.id === contact.id) || contact
         document.dispatchEvent(new CustomEvent('orbit:node-selected', { detail: { ...live } }))
       })
+
+      g.addEventListener('touchstart', e => {
+        e.preventDefault()
+        const touch = e.touches[0]
+        dragTarget = { g, contact }
+        dragStartClient = { x: touch.clientX, y: touch.clientY }
+      }, { passive: false })
 
       svg.appendChild(g)
     }

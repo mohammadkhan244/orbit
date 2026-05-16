@@ -259,7 +259,7 @@ async function init() {
   // ── STAGE_CHANGED: KV + Sheets sync ─────────────────────────────
   document.addEventListener(EVENTS.STAGE_CHANGED, async e => {
     const { id, newStatus } = e.detail
-    const contact = contacts.find(c => c.name === id)
+    const contact = contacts.find(c => c.id === id)
     if (!contact?.id) return
     contacts = contacts.map(c => c.id === contact.id ? { ...c, status: newStatus } : c)
     ls.update(contact.id, { status: newStatus })
@@ -275,7 +275,7 @@ async function init() {
   // ── NOTES_UPDATED: KV + Sheets sync ──────────────────────────────
   document.addEventListener(EVENTS.NOTES_UPDATED, async e => {
     const { id, notes } = e.detail
-    const contact = contacts.find(c => c.name === id)
+    const contact = contacts.find(c => c.id === id)
     if (!contact?.id) return
     contacts = contacts.map(c => c.id === contact.id ? { ...c, notes } : c)
     ls.update(contact.id, { notes })
