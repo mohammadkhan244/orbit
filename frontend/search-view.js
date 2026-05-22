@@ -179,6 +179,12 @@ function injectStyles() {
       padding-bottom: 16px;
       border-bottom: 1px solid rgba(184,115,51,0.1);
     }
+    .results-timestamp {
+      font-family: 'Courier Prime', monospace;
+      font-size: 10px; letter-spacing: 0.1em;
+      color: rgba(240,236,228,0.2);
+      margin-top: 6px;
+    }
 
     @keyframes card-in {
       from { opacity: 0; transform: translateY(8px); }
@@ -323,6 +329,7 @@ function buildCard(person, searchHash, source) {
   addBtn.addEventListener('click', () => {
     const now = new Date()
     const contact = {
+      id: person.id || crypto.randomUUID(),
       name: person.name,
       role: person.role,
       why: person.why,
@@ -448,7 +455,10 @@ function init() {
 
   const resultsLabel = document.createElement('div')
   resultsLabel.className = 'results-label'
+  const resultsTs = document.createElement('div')
+  resultsTs.className = 'results-timestamp'
   resultsEl.appendChild(resultsLabel)
+  resultsEl.appendChild(resultsTs)
 
   // admin raw panel
   const adminPanel = document.createElement('details')
@@ -473,16 +483,83 @@ function init() {
   wrap.appendChild(inner)
   container.appendChild(wrap)
 
-  // search handler
+  // ── Helpers ──────────────────────────────────────────────────────────────────
+
+  let sessionId = null
+
+  function formatTime(ts) {
+    const d = new Date(ts)
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) +
+      ' at ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  }
+
+  function updateBtn(timestamp) {
+    const DAY = 24 * 60 * 60 * 1000
+    if (timestamp && Date.now() - timestamp < DAY) {
+      searchBtn.disabled = true
+      searchBtn.textContent = 'Available again at ' +
+        new Date(timestamp + DAY).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    } else {
+      searchBtn.disabled = false
+      searchBtn.textContent = resultsEl.hidden ? 'Search' : 'Search Again'
+    }
+  }
+
+  function renderData(data, query, meta) {
+    const people = data.people ?? []
+    if (people.length === 0) {
+      errorEl.textContent = 'No results returned. Try a different query.'
+      errorEl.hidden = false
+      return
+    }
+
+    // Clear old results only when we have new ones (Bug 3)
+    while (resultsEl.children.length > 2) resultsEl.removeChild(resultsEl.lastChild)
+    adminPanel.hidden = true
+
+    resultsLabel.textContent = `${people.length} result${people.length === 1 ? '' : 's'}`
+    resultsTs.textContent = meta?.timestamp ? 'Generated ' + formatTime(meta.timestamp) : ''
+
+    people.forEach((p, i) => {
+      const card = buildCard(p, data.search_hash, 'search')
+      card.style.animationDelay = `${i * 60}ms`
+      resultsEl.appendChild(card)
+    })
+    resultsEl.hidden = false
+
+    if (window.ORBIT_ADMIN) {
+      adminPre.textContent = JSON.stringify(data, null, 2)
+      adminPanel.hidden = false
+    }
+  }
+
+  // ── Load saved results on init ────────────────────────────────────────────────
+
+  ;(async () => {
+    try {
+      const session = await window.ORBIT_SESSION_PROMISE
+      sessionId = session.sessionId
+      const r = await fetch(`/api/results-kv?sessionId=${encodeURIComponent(sessionId)}&type=search`)
+      if (r.ok) {
+        const saved = await r.json()
+        if (saved && saved.results && Array.isArray(saved.results.people) && saved.results.people.length > 0) {
+          if (saved.query) queryEl.value = saved.query
+          renderData(saved.results, saved.query, saved)
+          updateBtn(saved.timestamp)
+        }
+      }
+    } catch {}
+  })()
+
+  // ── Search handler ────────────────────────────────────────────────────────────
+
   searchBtn.addEventListener('click', async () => {
     const query = queryEl.value.trim()
     if (!query) { queryEl.focus(); return }
 
     searchBtn.disabled = true
     errorEl.hidden = true
-    resultsEl.hidden = true
-    adminPanel.hidden = true
-    while (resultsEl.children.length > 1) resultsEl.removeChild(resultsEl.lastChild)
+    // Bug 3: do NOT hide resultsEl or clear results here — keep existing results visible
 
     if (window.ORBIT_GUEST) {
       const now = Date.now()
@@ -536,26 +613,20 @@ function init() {
       await new Promise(r => setTimeout(r, 220))
       prog.hide()
 
-      const people = data.people ?? []
+      const now = Date.now()
+      renderData(data, query, { timestamp: now })
+      updateBtn(now)
 
-      if (people.length === 0) {
-        errorEl.textContent = 'No results returned. Try a different query.'
-        errorEl.hidden = false
-      } else {
-        resultsLabel.textContent = `${people.length} result${people.length === 1 ? '' : 's'}`
-        people.forEach((p, i) => {
-          const card = buildCard(p, data.search_hash, 'search')
-          card.style.animationDelay = `${i * 60}ms`
-          resultsEl.appendChild(card)
-        })
-        resultsEl.hidden = false
-        if (window.ORBIT_GUEST) localStorage.setItem('guest_search_timestamp', String(Date.now()))
+      if (sessionId) {
+        fetch('/api/results-kv', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, type: 'search', results: data, query, timestamp: now, date: new Date().toISOString() }),
+        }).catch(() => {})
       }
 
-      if (window.ORBIT_ADMIN) {
-        adminPre.textContent = JSON.stringify(data, null, 2)
-        adminPanel.hidden = false
-      }
+      if (window.ORBIT_GUEST) localStorage.setItem('guest_search_timestamp', String(Date.now()))
+
     } catch (err) {
       prog.hide()
       adminLog('Search error', { message: err.message, _elapsed: Math.round(performance.now() - t0) })
@@ -576,8 +647,9 @@ function init() {
       })
       errorEl.appendChild(copyLink)
       errorEl.hidden = false
-    } finally {
+      // Re-enable for immediate retry (results stay visible if they existed)
       searchBtn.disabled = false
+      searchBtn.textContent = resultsEl.hidden ? 'Search' : 'Search Again'
     }
   })
 

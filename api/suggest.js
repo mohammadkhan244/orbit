@@ -70,10 +70,12 @@ export default async function handler(req, res) {
       .map(b => b.text)
       .join('')
 
+    console.log('[suggest] raw response length:', raw.length, 'preview:', raw.slice(0, 200))
     const start = raw.indexOf('{')
     const end = raw.lastIndexOf('}')
-    if (start === -1 || end === -1) throw new Error('No JSON found in response')
+    if (start === -1 || end === -1) throw new Error('No JSON object found in response. Raw: ' + raw.slice(0, 300))
     const parsed = JSON.parse(raw.slice(start, end + 1))
+    parsed.people?.forEach(p => { if (!p.id) p.id = crypto.randomUUID() })
 
     kv.incr('stats:suggest:total').catch(() => {})
     if (isGuest) kv.incr('stats:guests:total').catch(() => {})

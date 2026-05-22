@@ -221,13 +221,11 @@ async function init() {
       const kvContacts = await kvGetContacts(sessionId)
       const ops    = pending.read()
       const merged = ops.length > 0 ? applyPending(kvContacts, ops) : kvContacts
-      if (merged.length > 0) {
-        contacts = merged
-        ls.write(contacts)
-        canvas.update(contacts)
-        updateProgress(contacts)
-        syncGlobal()
-      }
+      contacts = merged
+      ls.write(contacts)
+      canvas.update(contacts)
+      updateProgress(contacts)
+      syncGlobal()
       if (ops.length > 0) flushPending().catch(() => {})
     } catch {
       const stored = ls.read()

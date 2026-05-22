@@ -136,6 +136,13 @@ function injectStyles() {
       margin-top: 20px; line-height: 1.5;
     }
 
+    .suggest-results-timestamp {
+      font-family: 'Courier Prime', monospace;
+      font-size: 10px; letter-spacing: 0.1em;
+      color: rgba(240,236,228,0.2);
+      margin-top: 6px;
+    }
+
     .suggest-results { margin-top: 52px; }
     .suggest-results-label {
       font-family: 'Courier Prime', monospace;
@@ -298,6 +305,7 @@ function buildCard(person, searchHash) {
   addBtn.addEventListener('click', () => {
     const now = new Date()
     const contact = {
+      id: person.id || crypto.randomUUID(),
       name: person.name,
       role: person.role,
       why: person.why,
@@ -354,7 +362,6 @@ function init() {
   suggestBtn.className = 'suggest-btn'
   suggestBtn.textContent = 'Who should I reach out to?'
 
-  // progress bar
   const progressWrap = document.createElement('div')
   progressWrap.className = 'suggest-progress'
   progressWrap.hidden = true
@@ -388,9 +395,11 @@ function init() {
 
   const resultsLabel = document.createElement('div')
   resultsLabel.className = 'suggest-results-label'
+  const resultsTs = document.createElement('div')
+  resultsTs.className = 'suggest-results-timestamp'
   resultsEl.appendChild(resultsLabel)
+  resultsEl.appendChild(resultsTs)
 
-  // admin raw panel
   const adminPanel = document.createElement('details')
   adminPanel.className = 'suggest-admin-raw-panel'
   adminPanel.hidden = true
@@ -410,12 +419,98 @@ function init() {
   wrap.appendChild(inner)
   container.appendChild(wrap)
 
+  // ── Helpers ──────────────────────────────────────────────────────────────────
+
+  let sessionId = null
+
+  function formatTime(ts) {
+    const d = new Date(ts)
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) +
+      ' at ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  }
+
+  function updateBtn(timestamp) {
+    const DAY = 24 * 60 * 60 * 1000
+    if (timestamp && Date.now() - timestamp < DAY) {
+      suggestBtn.disabled = true
+      suggestBtn.textContent = 'Available again at ' +
+        new Date(timestamp + DAY).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    } else {
+      suggestBtn.disabled = false
+      suggestBtn.textContent = resultsEl.hidden ? 'Who should I reach out to?' : 'Suggest Again'
+    }
+  }
+
+  function renderData(data, meta) {
+    const people = data.people ?? []
+    if (people.length === 0) {
+      errorEl.textContent = 'No suggestions returned. Try again shortly.'
+      errorEl.hidden = false
+      return
+    }
+
+    // Clear old results only when we have new ones (Bug 3)
+    while (resultsEl.children.length > 2) resultsEl.removeChild(resultsEl.lastChild)
+    adminPanel.hidden = true
+
+    resultsLabel.textContent = `${people.length} suggestion${people.length === 1 ? '' : 's'}`
+    resultsTs.textContent = meta?.timestamp ? 'Generated ' + formatTime(meta.timestamp) : ''
+
+    const CATS = ['PRACTITIONER', 'THEORIST', 'CONNECTOR']
+    const grouped = {}
+    CATS.forEach(c => { grouped[c] = [] })
+    people.forEach(p => {
+      const cat = (p.category || '').toUpperCase()
+      if (grouped[cat]) grouped[cat].push(p)
+      else grouped['PRACTITIONER'].push(p)
+    })
+
+    let cardIndex = 0
+    CATS.forEach(cat => {
+      if (grouped[cat].length === 0) return
+      const header = document.createElement('div')
+      header.className = 'suggest-category-header'
+      header.textContent = cat
+      resultsEl.appendChild(header)
+      grouped[cat].forEach(p => {
+        const card = buildCard(p, data.search_hash)
+        card.style.animationDelay = `${cardIndex * 60}ms`
+        cardIndex++
+        resultsEl.appendChild(card)
+      })
+    })
+
+    resultsEl.hidden = false
+
+    if (window.ORBIT_ADMIN) {
+      adminPre.textContent = JSON.stringify(data, null, 2)
+      adminPanel.hidden = false
+    }
+  }
+
+  // ── Load saved results on init ────────────────────────────────────────────────
+
+  ;(async () => {
+    try {
+      const session = await window.ORBIT_SESSION_PROMISE
+      sessionId = session.sessionId
+      const r = await fetch(`/api/results-kv?sessionId=${encodeURIComponent(sessionId)}&type=suggest`)
+      if (r.ok) {
+        const saved = await r.json()
+        if (saved && saved.results && Array.isArray(saved.results.people) && saved.results.people.length > 0) {
+          renderData(saved.results, saved)
+          updateBtn(saved.timestamp)
+        }
+      }
+    } catch {}
+  })()
+
+  // ── Click handler ─────────────────────────────────────────────────────────────
+
   suggestBtn.addEventListener('click', async () => {
     suggestBtn.disabled = true
     errorEl.hidden = true
-    resultsEl.hidden = true
-    adminPanel.hidden = true
-    while (resultsEl.children.length > 1) resultsEl.removeChild(resultsEl.lastChild)
+    // Bug 3: do NOT hide resultsEl or clear results here — keep existing results visible
 
     if (window.ORBIT_GUEST) {
       const now = Date.now()
@@ -466,52 +561,33 @@ function init() {
       }
 
       const data = await res.json()
+      // Bug 1: log full response before parsing
+      console.log('[suggest] response:', JSON.stringify(data).slice(0, 500))
       adminLog('Suggest response', { status: res.status, people: data.people?.length ?? 0, _elapsed: elapsed })
+
+      // Bug 1: validate structure before rendering
+      if (!data || !Array.isArray(data.people)) {
+        throw new Error('Unexpected response format — no people array returned')
+      }
 
       prog.finish()
       await new Promise(r => setTimeout(r, 220))
       prog.hide()
 
-      const people = data.people ?? []
+      const now = Date.now()
+      renderData(data, { timestamp: now })
+      updateBtn(now)
 
-      if (people.length === 0) {
-        errorEl.textContent = 'No suggestions returned. Try again shortly.'
-        errorEl.hidden = false
-      } else {
-        resultsLabel.textContent = `${people.length} suggestion${people.length === 1 ? '' : 's'}`
-
-        const CATS = ['PRACTITIONER', 'THEORIST', 'CONNECTOR']
-        const grouped = {}
-        CATS.forEach(c => { grouped[c] = [] })
-        people.forEach(p => {
-          const cat = (p.category || '').toUpperCase()
-          if (grouped[cat]) grouped[cat].push(p)
-          else grouped['PRACTITIONER'].push(p)
-        })
-
-        let cardIndex = 0
-        CATS.forEach(cat => {
-          if (grouped[cat].length === 0) return
-          const header = document.createElement('div')
-          header.className = 'suggest-category-header'
-          header.textContent = cat
-          resultsEl.appendChild(header)
-          grouped[cat].forEach(p => {
-            const card = buildCard(p, data.search_hash)
-            card.style.animationDelay = `${cardIndex * 60}ms`
-            cardIndex++
-            resultsEl.appendChild(card)
-          })
-        })
-
-        resultsEl.hidden = false
-        if (window.ORBIT_GUEST) localStorage.setItem('guest_suggest_timestamp', String(Date.now()))
+      if (sessionId) {
+        fetch('/api/results-kv', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, type: 'suggest', results: data, timestamp: now, date: new Date().toISOString() }),
+        }).catch(() => {})
       }
 
-      if (window.ORBIT_ADMIN) {
-        adminPre.textContent = JSON.stringify(data, null, 2)
-        adminPanel.hidden = false
-      }
+      if (window.ORBIT_GUEST) localStorage.setItem('guest_suggest_timestamp', String(Date.now()))
+
     } catch (err) {
       prog.hide()
       adminLog('Suggest error', { message: err.message, _elapsed: Math.round(performance.now() - t0) })
@@ -519,7 +595,7 @@ function init() {
         429: "You've already fetched suggestions recently. Wait 60 seconds and try again.",
         500: "Something went wrong on our end. Try again in a moment. If it keeps failing, email mohammadkhan@themohammadkhan.com with the word 'Suggest'.",
         503: "ORBIT is temporarily unavailable. Try again in a few minutes.",
-        default: "Suggest didn't complete. This sometimes happens with complex profiles. Try simplifying your mission field and searching again. Still stuck? Email mohammadkhan@themohammadkhan.com"
+        default: "Couldn't generate suggestions — tap to try again.",
       }
       const msg = errorMessages[responseStatus] || errorMessages.default
       errorEl.innerHTML = ''
@@ -532,8 +608,9 @@ function init() {
       })
       errorEl.appendChild(copyLink)
       errorEl.hidden = false
-    } finally {
+      // Re-enable for immediate retry (results stay visible if they existed)
       suggestBtn.disabled = false
+      suggestBtn.textContent = resultsEl.hidden ? 'Who should I reach out to?' : 'Suggest Again'
     }
   })
 }

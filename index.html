@@ -916,6 +916,26 @@
       background: rgba(184,115,51,0.08);
       border-color: #b87333;
     }
+    .ol-suggest-again {
+      display: block;
+      width: calc(100% - 32px);
+      margin: 8px 16px 14px;
+      background: none;
+      border: 1px solid rgba(184,115,51,0.2);
+      color: rgba(184,115,51,0.55);
+      font-family: 'Courier Prime', monospace;
+      font-size: 10px; letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 5px 10px; cursor: pointer;
+      transition: all 0.12s ease;
+      text-align: center;
+    }
+    .ol-suggest-again:hover:not(:disabled) {
+      background: rgba(184,115,51,0.06);
+      border-color: rgba(184,115,51,0.4);
+      color: #b87333;
+    }
+    .ol-suggest-again:disabled { opacity: 0.4; cursor: not-allowed; }
 
     @media (max-width: 700px) {
       #orbit-list-panel {
@@ -1931,8 +1951,12 @@
       suggestLabel.className = 'ol-suggest-label'
       suggestLabel.textContent = 'SUGGESTED'
       var suggestBody = document.createElement('div')
+      var suggestAgainBtn = document.createElement('button')
+      suggestAgainBtn.className = 'ol-suggest-again'
+      suggestAgainBtn.style.display = 'none'
       suggestSection.appendChild(suggestLabel)
       suggestSection.appendChild(suggestBody)
+      suggestSection.appendChild(suggestAgainBtn)
 
       panel.appendChild(olHeader)
       panel.appendChild(filterWrap)
@@ -2013,6 +2037,20 @@
       filterInput.addEventListener('input', renderList)
 
       var suggestFetched = false
+      var LS_SUGGEST_TS = 'orbit_list_suggest_ts'
+      var SUGGEST_DAY = 24 * 60 * 60 * 1000
+
+      function updateSuggestAgainBtn() {
+        var ts = parseInt(localStorage.getItem(LS_SUGGEST_TS) || '0')
+        if (ts && Date.now() - ts < SUGGEST_DAY) {
+          suggestAgainBtn.disabled = true
+          suggestAgainBtn.textContent = 'Available again at ' +
+            new Date(ts + SUGGEST_DAY).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        } else {
+          suggestAgainBtn.disabled = false
+          suggestAgainBtn.textContent = 'Suggest Again'
+        }
+      }
 
       function renderSuggestions(suggestions) {
         suggestBody.innerHTML = ''
@@ -2058,13 +2096,12 @@
         suggestSection.style.display = ''
       }
 
-      function maybeFetchSuggestions() {
-        if (suggestFetched) return
+      function fetchSuggestions() {
         var identity = window.ORBIT_IDENTITY
         if (!identity || !identity.name) return
-        suggestFetched = true
         suggestSection.style.display = ''
         suggestBody.innerHTML = '<div class="ol-suggest-loading">Finding people for your orbit...</div>'
+        suggestAgainBtn.style.display = 'none'
         var contacts = window.ORBIT_CONTACTS || []
         fetch('/api/suggest-orbit', {
           method: 'POST',
@@ -2078,11 +2115,30 @@
         .then(function(data) {
           if (!Array.isArray(data)) throw new Error('Not an array')
           var names = (window.ORBIT_CONTACTS || []).map(function(c) { return (c.name || '').toLowerCase() })
-          renderSuggestions(data.filter(function(s) {
+          var filtered = data.filter(function(s) {
             return s.name && names.indexOf(s.name.toLowerCase()) === -1
-          }))
+          })
+          renderSuggestions(filtered)
+          localStorage.setItem(LS_SUGGEST_TS, String(Date.now()))
+          if (filtered.length > 0) {
+            suggestAgainBtn.style.display = ''
+            updateSuggestAgainBtn()
+          }
         })
         .catch(function() { suggestSection.style.display = 'none' })
+      }
+
+      suggestAgainBtn.addEventListener('click', function() {
+        if (suggestAgainBtn.disabled) return
+        fetchSuggestions()
+      })
+
+      function maybeFetchSuggestions() {
+        if (suggestFetched) return
+        var identity = window.ORBIT_IDENTITY
+        if (!identity || !identity.name) return
+        suggestFetched = true
+        fetchSuggestions()
       }
 
       document.addEventListener('orbit:contacts-updated', function(e) {
