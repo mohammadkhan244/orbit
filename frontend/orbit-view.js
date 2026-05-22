@@ -52,6 +52,50 @@ function injectStyles() {
         border-top: 1px solid rgba(184,115,51,0.15);
       }
     }
+
+    .orbit-suggest-banner {
+      position: absolute;
+      top: 44px; left: 0; right: 0; height: 52px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 32px; gap: 16px;
+      background: rgba(184,115,51,0.06);
+      border-bottom: 1px solid rgba(184,115,51,0.12);
+      z-index: 4; box-sizing: border-box;
+    }
+    .orbit-suggest-banner-text {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px; color: rgba(240,236,228,0.65);
+      flex: 1; min-width: 0;
+    }
+    .orbit-suggest-banner-show {
+      background: rgba(184,115,51,0.14);
+      border: 1px solid rgba(184,115,51,0.4);
+      color: #b87333;
+      font-family: 'Courier Prime', monospace;
+      font-size: 10px; letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 5px 14px; cursor: pointer;
+      transition: all 0.12s ease; flex-shrink: 0;
+    }
+    .orbit-suggest-banner-show:hover {
+      background: rgba(184,115,51,0.24);
+      border-color: #b87333;
+    }
+    .orbit-suggest-banner-dismiss {
+      background: none; border: none;
+      color: rgba(240,236,228,0.28);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px; cursor: pointer;
+      padding: 4px 0; flex-shrink: 0;
+      transition: color 0.12s ease;
+    }
+    .orbit-suggest-banner-dismiss:hover { color: rgba(240,236,228,0.55); }
+    .orbit-canvas-area { transition: top 0.2s ease; }
+    .orbit-canvas-area.with-banner { top: 96px; }
+    @media (max-width: 700px) {
+      .orbit-suggest-banner { padding: 0 16px; }
+      .orbit-suggest-banner-text { font-size: 12px; }
+    }
   `
   document.head.appendChild(s)
 }
@@ -211,6 +255,55 @@ async function init() {
     syncGlobal()
   })
 
+  // ── Suggestion banner for existing users with sparse orbits ──────────────
+  function showSuggestBanner(sid) {
+    const banner = document.createElement('div')
+    banner.className = 'orbit-suggest-banner'
+
+    const text = document.createElement('span')
+    text.className = 'orbit-suggest-banner-text'
+    text.textContent = 'Want people suggestions based on your profile?'
+
+    const showBtn = document.createElement('button')
+    showBtn.className = 'orbit-suggest-banner-show'
+    showBtn.textContent = 'Show me'
+
+    const dismissBtn = document.createElement('button')
+    dismissBtn.className = 'orbit-suggest-banner-dismiss'
+    dismissBtn.textContent = 'Not now'
+
+    banner.appendChild(text)
+    banner.appendChild(showBtn)
+    banner.appendChild(dismissBtn)
+    container.appendChild(banner)
+    canvasArea.classList.add('with-banner')
+
+    function setFlag() {
+      fetch('/api/suggest-prompted-kv', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: sid }),
+      }).catch(() => {})
+    }
+
+    function removeBanner() {
+      banner.remove()
+      canvasArea.classList.remove('with-banner')
+    }
+
+    showBtn.addEventListener('click', () => {
+      setFlag()
+      removeBanner()
+      document.dispatchEvent(new CustomEvent('orbit:open-list'))
+      document.dispatchEvent(new CustomEvent('orbit:show-suggestions'))
+    })
+
+    dismissBtn.addEventListener('click', () => {
+      setFlag()
+      removeBanner()
+    })
+  }
+
   // ── Load contacts once session is ready (KV → localStorage fallback) ──
   ;(async () => {
     try {
@@ -230,6 +323,14 @@ async function init() {
       updateProgress(contacts)
       syncGlobal()
       if (ops.length > 0) flushPending().catch(() => {})
+
+      // Show suggestion banner to non-guest users with fewer than 3 contacts
+      if (!window.ORBIT_GUEST && contacts.length < 3) {
+        fetch(`/api/suggest-prompted-kv?sessionId=${encodeURIComponent(sessionId)}`)
+          .then(r => r.ok ? r.json() : { prompted: false })
+          .then(data => { if (!data.prompted) showSuggestBanner(sessionId) })
+          .catch(() => {})
+      }
     } catch {
       const stored = ls.read()
       if (stored.length > 0) {

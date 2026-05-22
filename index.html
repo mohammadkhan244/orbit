@@ -2146,6 +2146,9 @@
         renderList()
         maybeFetchSuggestions()
       })
+
+      document.addEventListener('orbit:open-list', function() { setOpen(true) })
+      document.addEventListener('orbit:show-suggestions', function() { fetchSuggestions() })
     })()
   </script>
 
