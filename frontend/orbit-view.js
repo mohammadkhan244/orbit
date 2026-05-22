@@ -221,7 +221,10 @@ async function init() {
       const kvContacts = await kvGetContacts(sessionId)
       const ops    = pending.read()
       const merged = ops.length > 0 ? applyPending(kvContacts, ops) : kvContacts
-      contacts = merged
+      // Preserve contacts added before KV load (e.g. from post-onboarding screen)
+      const localOnly = contacts.filter(c => !merged.find(mc => mc.id === c.id))
+      contacts = [...merged, ...localOnly]
+      if (localOnly.length > 0) kvSetContacts(sessionId, contacts).catch(() => {})
       ls.write(contacts)
       canvas.update(contacts)
       updateProgress(contacts)

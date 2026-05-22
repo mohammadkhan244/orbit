@@ -150,6 +150,105 @@ function injectStyles() {
       font-size: clamp(18px, 4vw, 24px); font-weight: 400;
       color: #b87333; margin-bottom: 32px;
     }
+
+    /* ── Post-onboarding suggestions screen ── */
+    .postonboard-heading {
+      font-family: 'Courier Prime', monospace;
+      font-size: clamp(18px, 4vw, 24px); font-weight: 400;
+      color: #b87333; line-height: 1.3;
+      margin-bottom: 8px;
+    }
+    .postonboard-sub {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px; color: rgba(240,236,228,0.38);
+      margin-bottom: 40px;
+    }
+    .postonboard-progress { margin-bottom: 32px; }
+    .postonboard-progress-msg {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px; color: rgba(240,236,228,0.6);
+      margin-bottom: 6px; min-height: 1.5em;
+    }
+    .postonboard-progress-sub {
+      font-family: 'Courier Prime', monospace;
+      font-size: 10px; letter-spacing: 0.1em;
+      color: rgba(240,236,228,0.22);
+      margin-bottom: 16px;
+    }
+    .postonboard-progress-track {
+      width: 100%; height: 1px;
+      background: rgba(184,115,51,0.15);
+    }
+    .postonboard-progress-fill {
+      height: 100%; background: #b87333;
+      width: 0%; transition: width 0.6s ease;
+    }
+    .postonboard-cards { margin-bottom: 32px; }
+    .postonboard-card {
+      padding: 20px 0;
+      border-bottom: 1px solid rgba(184,115,51,0.08);
+    }
+    .postonboard-card:first-child { border-top: 1px solid rgba(184,115,51,0.08); }
+    .postonboard-card-name {
+      font-family: 'Courier Prime', monospace;
+      font-size: 15px; font-weight: 700; color: #f0ece4;
+      margin-bottom: 3px;
+    }
+    .postonboard-card-role {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px; color: rgba(240,236,228,0.38);
+      margin-bottom: 8px;
+    }
+    .postonboard-card-reason {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px; color: rgba(240,236,228,0.62);
+      line-height: 1.55; font-style: italic;
+      margin-bottom: 12px;
+    }
+    .postonboard-card-add {
+      background: none;
+      border: 1px solid rgba(184,115,51,0.35);
+      color: #b87333;
+      font-family: 'Courier Prime', monospace;
+      font-size: 10px; letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 6px 16px; cursor: pointer;
+      transition: all 0.12s ease;
+    }
+    .postonboard-card-add:hover:not(:disabled) {
+      background: rgba(184,115,51,0.08);
+      border-color: #b87333; color: #f0ece4;
+    }
+    .postonboard-card-add.added {
+      border-color: rgba(240,236,228,0.12);
+      color: rgba(240,236,228,0.3);
+      cursor: default;
+    }
+    .postonboard-enter {
+      background: rgba(184,115,51,0.1);
+      border: 1px solid rgba(184,115,51,0.45);
+      color: #b87333;
+      font-family: 'Courier Prime', monospace;
+      font-size: 12px; letter-spacing: 0.18em;
+      text-transform: uppercase;
+      padding: 12px 36px; cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-block;
+      margin-top: 8px;
+      box-sizing: border-box;
+    }
+    .postonboard-enter:hover {
+      background: rgba(184,115,51,0.18);
+      border-color: #b87333; color: #f0ece4;
+    }
+    .postonboard-error {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px; color: rgba(240,236,228,0.4);
+      margin-bottom: 24px; font-style: italic;
+    }
+    @media (max-width: 480px) {
+      .postonboard-enter { width: 100%; text-align: center; }
+    }
   `
   document.head.appendChild(s)
 }
@@ -521,25 +620,202 @@ function buildForm() {
     setIdentity(identity)
     try { localStorage.setItem(LS_SESSION, sessionId) } catch {}
 
-    // Store to KV — non-blocking, failure is graceful
-    // sendWelcome: true triggers confirmation + notification emails via Resend
-    try {
-      const r = await fetch('/api/identity', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId, identity, sendWelcome: true }),
-      })
-      const result = await r.json()
-      console.log('[onboarding] identity POST result:', result)
-    } catch (err) {
-      console.error('[onboarding] identity POST failed:', err)
-    }
-
-    dismiss(overlay)
-    window._orbitSessionResolve({ sessionId, identity })
+    showPostOnboardingScreen(overlay, inner, sessionId, identity)
   })
 
   return overlay
+}
+
+// ── Post-onboarding suggestions screen ──────────────────────────────────────
+
+const POST_ONBOARD_MESSAGES = [
+  'Reading your gravity profile...',
+  'Finding practitioners in your field...',
+  'Checking who\'s reachable...',
+  'Almost there...',
+]
+
+function showPostOnboardingScreen(overlay, inner, sessionId, identity) {
+  inner.innerHTML = ''
+  overlay.scrollTop = 0
+
+  const eyebrow = document.createElement('div')
+  eyebrow.className = 'onboarding-eyebrow'
+  eyebrow.textContent = 'ORBIT'
+
+  const heading = document.createElement('div')
+  heading.className = 'postonboard-heading'
+  heading.textContent = 'People for your orbit'
+
+  const sub = document.createElement('div')
+  sub.className = 'postonboard-sub'
+  sub.textContent = 'Based on your gravity profile'
+
+  const progressArea = document.createElement('div')
+  progressArea.className = 'postonboard-progress'
+
+  const progressMsg = document.createElement('div')
+  progressMsg.className = 'postonboard-progress-msg'
+  progressMsg.textContent = POST_ONBOARD_MESSAGES[0]
+
+  const progressSub = document.createElement('div')
+  progressSub.className = 'postonboard-progress-sub'
+  progressSub.textContent = 'Finding people based on your profile'
+
+  const progressTrack = document.createElement('div')
+  progressTrack.className = 'postonboard-progress-track'
+  const progressFill = document.createElement('div')
+  progressFill.className = 'postonboard-progress-fill'
+  progressTrack.appendChild(progressFill)
+
+  progressArea.appendChild(progressMsg)
+  progressArea.appendChild(progressSub)
+  progressArea.appendChild(progressTrack)
+
+  const enterBtn = document.createElement('button')
+  enterBtn.className = 'postonboard-enter'
+  enterBtn.textContent = 'Enter your orbit →'
+  enterBtn.hidden = true
+
+  inner.appendChild(eyebrow)
+  inner.appendChild(heading)
+  inner.appendChild(sub)
+  inner.appendChild(progressArea)
+  inner.appendChild(enterBtn)
+
+  // Progress animation
+  let step = 0
+  const timer = setInterval(() => {
+    step++
+    const pct = Math.min(88, Math.round((step / POST_ONBOARD_MESSAGES.length) * 100))
+    progressFill.style.width = pct + '%'
+    if (step < POST_ONBOARD_MESSAGES.length) progressMsg.textContent = POST_ONBOARD_MESSAGES[step]
+    if (step >= POST_ONBOARD_MESSAGES.length) clearInterval(timer)
+  }, 2500)
+
+  const queuedContacts = []
+
+  function resolveAndEnter() {
+    // Dispatch queued contacts synchronously BEFORE resolving session so
+    // orbit-view.js CONTACT_ADDED handler updates contacts[] before KV load runs
+    queuedContacts.forEach(c => {
+      document.dispatchEvent(new CustomEvent('orbit:contact-added', { detail: c }))
+    })
+    window._orbitSessionResolve({ sessionId, identity })
+    dismiss(overlay)
+  }
+
+  enterBtn.addEventListener('click', resolveAndEnter)
+
+  // ── Fire API calls in parallel ────────────────────────────────────────────
+
+  fetch('/api/identity', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId, identity, sendWelcome: true }),
+  }).catch(err => console.error('[onboarding] identity POST failed:', err))
+
+  fetch('/api/suggest-orbit', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ gravityProfile: identity, existingContacts: [] }),
+  })
+  .then(r => {
+    if (!r.ok) throw new Error(r.status)
+    return r.json()
+  })
+  .then(data => {
+    clearInterval(timer)
+    if (!Array.isArray(data) || data.length === 0) throw new Error('Empty')
+
+    progressFill.style.width = '100%'
+    setTimeout(() => {
+      progressArea.remove()
+
+      const cardsEl = document.createElement('div')
+      cardsEl.className = 'postonboard-cards'
+
+      data.forEach(person => {
+        const card = document.createElement('div')
+        card.className = 'postonboard-card'
+
+        const nameEl = document.createElement('div')
+        nameEl.className = 'postonboard-card-name'
+        nameEl.textContent = person.name || ''
+
+        const roleEl = document.createElement('div')
+        roleEl.className = 'postonboard-card-role'
+        roleEl.textContent = person.role || ''
+
+        const reasonEl = document.createElement('div')
+        reasonEl.className = 'postonboard-card-reason'
+        reasonEl.textContent = person.reason || ''
+
+        const addBtn = document.createElement('button')
+        addBtn.className = 'postonboard-card-add'
+        addBtn.textContent = '+ Add to Orbit'
+        addBtn.addEventListener('click', () => {
+          queuedContacts.push({
+            id: crypto.randomUUID(),
+            name: person.name || '',
+            role: person.role || '',
+            why: person.reason || '',
+            url: person.url || '',
+            platform: 'Suggested',
+            status: 'IDENTIFIED',
+            date_added: new Date().toISOString().split('T')[0],
+            notes: '',
+          })
+          addBtn.textContent = 'Added'
+          addBtn.disabled = true
+          addBtn.classList.add('added')
+        })
+
+        card.appendChild(nameEl)
+        card.appendChild(roleEl)
+        card.appendChild(reasonEl)
+        card.appendChild(addBtn)
+        cardsEl.appendChild(card)
+      })
+
+      inner.insertBefore(cardsEl, enterBtn)
+      enterBtn.hidden = false
+
+      // Persist to KV so suggest-view.js loads these on next visit
+      const now = Date.now()
+      fetch('/api/results-kv', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          type: 'suggest',
+          results: {
+            people: data.map(p => ({
+              id: crypto.randomUUID(),
+              name: p.name,
+              role: p.role,
+              why: p.reason,
+              url: p.url,
+              platform: 'Suggested',
+              category: 'PRACTITIONER',
+            })),
+          },
+          timestamp: now,
+          date: new Date().toISOString(),
+        }),
+      }).catch(() => {})
+    }, 260)
+  })
+  .catch(() => {
+    clearInterval(timer)
+    progressArea.remove()
+
+    const errEl = document.createElement('div')
+    errEl.className = 'postonboard-error'
+    errEl.textContent = "Couldn't find suggestions right now"
+    inner.insertBefore(errEl, enterBtn)
+    enterBtn.hidden = false
+  })
 }
 
 init()
