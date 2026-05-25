@@ -171,25 +171,63 @@ export class OrbitCanvas {
     }
 
     // ── center ──
-    svg.appendChild(svgEl('circle', { cx, cy, r: 40, fill: 'rgba(184,115,51,0.06)' },
-      { filter: 'drop-shadow(0 0 12px rgba(184,115,51,0.5))' }))
+    const firstName = window.ORBIT_IDENTITY?.name
+      ? window.ORBIT_IDENTITY.name.split(' ')[0].slice(0, 8).toUpperCase()
+      : null
+    const centerLabelText = firstName || 'YOU'
+    const centerFontSize  = centerLabelText.length > 5 ? '7' : '8'
+
+    const centerG = document.createElementNS(NS, 'g')
+    centerG.style.cursor = 'pointer'
+
+    const centerGlow = svgEl('circle', { cx, cy, r: 40, fill: 'rgba(184,115,51,0.06)' },
+      { filter: 'drop-shadow(0 0 12px rgba(184,115,51,0.5))' })
+    centerG.appendChild(centerGlow)
 
     const centerCircle = svgEl('circle', {
       cx, cy, r: 20,
       fill: COLORS.bg, stroke: COLORS.accent, 'stroke-width': '1.5',
     }, { filter: 'drop-shadow(0 0 6px rgba(184,115,51,0.65))' })
-    svg.appendChild(centerCircle)
+    centerG.appendChild(centerCircle)
 
     const centerLabel = svgEl('text', {
       x: cx, y: cy + 4,
       'text-anchor': 'middle',
       fill: COLORS.accent,
       'font-family': 'Courier Prime, monospace',
-      'font-size': '8',
-      'letter-spacing': '2',
+      'font-size': centerFontSize,
+      'letter-spacing': centerLabelText.length > 5 ? '1' : '2',
     }, { pointerEvents: 'none' })
-    centerLabel.textContent = 'ORBIT'
-    svg.appendChild(centerLabel)
+    centerLabel.textContent = centerLabelText
+    centerG.appendChild(centerLabel)
+
+    centerG.addEventListener('mouseenter', () => {
+      centerCircle.setAttribute('stroke', COLORS.text)
+      centerCircle.style.filter = 'drop-shadow(0 0 10px rgba(184,115,51,0.9))'
+    })
+    centerG.addEventListener('mouseleave', () => {
+      centerCircle.setAttribute('stroke', COLORS.accent)
+      centerCircle.style.filter = 'drop-shadow(0 0 6px rgba(184,115,51,0.65))'
+    })
+    centerG.addEventListener('click', () => {
+      document.getElementById('gravity-profile-link')?.click()
+    })
+
+    svg.appendChild(centerG)
+
+    // ── empty state hint ──
+    if (this.contacts.length === 0) {
+      const hint = svgEl('text', {
+        x: cx, y: cy + 72,
+        'text-anchor': 'middle',
+        fill: 'rgba(240,236,228,0.18)',
+        'font-family': 'DM Sans, sans-serif',
+        'font-size': '12',
+        'letter-spacing': '0',
+      }, { pointerEvents: 'none' })
+      hint.textContent = 'Search or Suggest to begin'
+      svg.appendChild(hint)
+    }
 
     // ── nodes ──
     for (const contact of this.contacts) {

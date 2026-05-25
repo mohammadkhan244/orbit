@@ -500,6 +500,7 @@ function buildReturnFlow(inner, overlay, onBack) {
         const { sessionId, identity } = await r.json()
         try { localStorage.setItem(LS_SESSION, sessionId) } catch {}
         setIdentity(identity)
+        window.ORBIT_GUEST = false
         dismiss(overlay)
         window._orbitSessionResolve({ sessionId, identity })
         console.log('[return] session restored for', email)
@@ -618,6 +619,7 @@ function buildForm() {
     }
 
     setIdentity(identity)
+    if (identity.email) window.ORBIT_GUEST = false
     try { localStorage.setItem(LS_SESSION, sessionId) } catch {}
 
     showPostOnboardingScreen(overlay, inner, sessionId, identity)
