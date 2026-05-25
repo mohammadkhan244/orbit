@@ -798,6 +798,8 @@
       padding: 18px 16px 14px;
       border-bottom: 1px solid rgba(184,115,51,0.1);
       flex-shrink: 0;
+      display: flex; align-items: center;
+      justify-content: space-between;
     }
     .ol-filter-wrap {
       padding: 10px 16px;
@@ -936,6 +938,41 @@
       color: #b87333;
     }
     .ol-suggest-again:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .ol-export-btn {
+      background: none;
+      border: 1px solid rgba(184,115,51,0.2);
+      color: rgba(184,115,51,0.5);
+      font-family: 'Courier Prime', monospace;
+      font-size: 9px; letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 3px 8px; cursor: pointer;
+      transition: all 0.12s ease;
+    }
+    .ol-export-btn:hover {
+      background: rgba(184,115,51,0.06);
+      border-color: rgba(184,115,51,0.4);
+      color: #b87333;
+    }
+
+    .ol-suggest-contact {
+      margin-top: 6px; padding-top: 6px;
+      border-top: 1px solid rgba(184,115,51,0.06);
+    }
+    .ol-suggest-contact-row {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px; color: rgba(240,236,228,0.38);
+      margin-bottom: 2px; line-height: 1.4;
+    }
+    .ol-suggest-contact-link {
+      color: rgba(184,115,51,0.55); text-decoration: none;
+    }
+    .ol-suggest-contact-link:hover { color: #b87333; text-decoration: underline; }
+    .ol-suggest-contact-note {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 10px; color: rgba(240,236,228,0.2);
+      font-style: italic; margin-top: 3px;
+    }
 
     @media (max-width: 700px) {
       #orbit-list-panel {
@@ -1908,7 +1945,15 @@
 
       var olHeader = document.createElement('div')
       olHeader.className = 'ol-header'
-      olHeader.textContent = 'IN ORBIT'
+      var olHeaderTitle = document.createElement('span')
+      olHeaderTitle.textContent = 'IN ORBIT'
+      var exportBtn = document.createElement('button')
+      exportBtn.className = 'ol-export-btn'
+      exportBtn.textContent = 'Export CSV'
+      exportBtn.title = 'Download your orbit as CSV'
+      exportBtn.addEventListener('click', function() { exportCSV() })
+      olHeader.appendChild(olHeaderTitle)
+      olHeader.appendChild(exportBtn)
 
       var filterWrap = document.createElement('div')
       filterWrap.className = 'ol-filter-wrap'
@@ -2070,6 +2115,79 @@
           var reasonEl = document.createElement('div')
           reasonEl.className = 'ol-suggest-reason'
           reasonEl.textContent = s.reason || ''
+
+          // Contact info
+          var hasEmail    = s.email    && s.email.trim()
+          var hasLinkedIn = s.linkedin && s.linkedin.trim()
+          var hasWebsite  = s.website  && s.website.trim()
+          var hasBooks    = Array.isArray(s.books) && s.books.length > 0
+          var contactNote = (s.contact_note || '').trim()
+          if (hasEmail || hasLinkedIn || hasWebsite || hasBooks || contactNote) {
+            var contactEl = document.createElement('div')
+            contactEl.className = 'ol-suggest-contact'
+            if (hasEmail) {
+              var r = document.createElement('div')
+              r.className = 'ol-suggest-contact-row'
+              var a = document.createElement('a')
+              a.className = 'ol-suggest-contact-link'
+              a.href = 'mailto:' + s.email.trim()
+              a.textContent = s.email.trim()
+              r.appendChild(document.createTextNode('Email: '))
+              r.appendChild(a)
+              contactEl.appendChild(r)
+            }
+            if (hasLinkedIn) {
+              var r = document.createElement('div')
+              r.className = 'ol-suggest-contact-row'
+              var a = document.createElement('a')
+              a.className = 'ol-suggest-contact-link'
+              a.href = s.linkedin.trim()
+              a.textContent = 'LinkedIn'
+              a.target = '_blank'; a.rel = 'noopener noreferrer'
+              r.appendChild(document.createTextNode('LinkedIn: '))
+              r.appendChild(a)
+              contactEl.appendChild(r)
+            }
+            if (hasWebsite) {
+              var r = document.createElement('div')
+              r.className = 'ol-suggest-contact-row'
+              var a = document.createElement('a')
+              a.className = 'ol-suggest-contact-link'
+              a.href = s.website.trim()
+              a.textContent = s.website.trim()
+              a.target = '_blank'; a.rel = 'noopener noreferrer'
+              r.appendChild(document.createTextNode('Website: '))
+              r.appendChild(a)
+              contactEl.appendChild(r)
+            }
+            if (hasBooks) {
+              s.books.forEach(function(book) {
+                if (!book.title) return
+                var r = document.createElement('div')
+                r.className = 'ol-suggest-contact-row'
+                var parts = [book.title]
+                if (book.publisher) parts.push(book.publisher)
+                if (book.year) parts.push(book.year)
+                r.textContent = 'Book: ' + parts.join(' — ')
+                contactEl.appendChild(r)
+              })
+            }
+            if (contactNote) {
+              var n = document.createElement('div')
+              n.className = 'ol-suggest-contact-note'
+              n.textContent = contactNote
+              contactEl.appendChild(n)
+            }
+            card.appendChild(nameEl)
+            card.appendChild(roleEl)
+            card.appendChild(reasonEl)
+            card.appendChild(contactEl)
+          } else {
+            card.appendChild(nameEl)
+            card.appendChild(roleEl)
+            card.appendChild(reasonEl)
+          }
+
           var addBtn = document.createElement('button')
           addBtn.className = 'ol-suggest-add'
           addBtn.textContent = '+ Add'
@@ -2081,19 +2199,53 @@
               why: s.reason || '',
               url: s.url || '',
               platform: 'Suggested',
+              email: s.email || '',
+              linkedin: s.linkedin || '',
+              website: s.website || '',
+              books: s.books || [],
               status: 'IDENTIFIED',
               date_added: new Date().toISOString().split('T')[0],
               notes: ''
             }}))
             card.remove()
           })
-          card.appendChild(nameEl)
-          card.appendChild(roleEl)
-          card.appendChild(reasonEl)
           card.appendChild(addBtn)
           suggestBody.appendChild(card)
         })
         suggestSection.style.display = ''
+      }
+
+      function exportCSV() {
+        var contacts = window.ORBIT_CONTACTS || []
+        if (contacts.length === 0) return
+        var headers = ['Name', 'Role', 'Why', 'URL', 'Email', 'LinkedIn', 'Website', 'Status', 'Notes', 'Last Interaction', 'Date Added', 'Source']
+        function esc(v) {
+          var s = String(v == null ? '' : v)
+          if (s.indexOf(',') !== -1 || s.indexOf('"') !== -1 || s.indexOf('\n') !== -1) {
+            return '"' + s.replace(/"/g, '""') + '"'
+          }
+          return s
+        }
+        var rows = [headers.map(esc).join(',')]
+        contacts.forEach(function(c) {
+          rows.push([
+            c.name, c.role, c.why, c.url,
+            c.email, c.linkedin, c.website,
+            c.status, c.notes, c.last_interaction, c.date_added, c.source
+          ].map(esc).join(','))
+        })
+        var csv = rows.join('\r\n')
+        var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+        var url = URL.createObjectURL(blob)
+        var a = document.createElement('a')
+        var sid = (window.ORBIT_SESSION_ID || 'orbit').slice(0, 8)
+        var date = new Date().toISOString().slice(0, 10)
+        a.href = url
+        a.download = 'orbit-' + sid + '-' + date + '.csv'
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
       }
 
       function fetchSuggestions() {

@@ -232,6 +232,36 @@ function injectStyles() {
       cursor: default;
     }
 
+    .suggest-card .card-contact {
+      margin-top: 14px; padding-top: 14px;
+      border-top: 1px solid rgba(184,115,51,0.07);
+    }
+    .suggest-card .card-contact-label {
+      font-family: 'Courier Prime', monospace;
+      font-size: 9px; letter-spacing: 0.16em;
+      color: rgba(240,236,228,0.2);
+      text-transform: uppercase; margin-bottom: 7px;
+    }
+    .suggest-card .card-contact-row {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px; color: rgba(240,236,228,0.48);
+      margin-bottom: 3px; line-height: 1.4;
+    }
+    .suggest-card .card-contact-link {
+      color: rgba(184,115,51,0.65); text-decoration: none;
+    }
+    .suggest-card .card-contact-link:hover { color: #b87333; text-decoration: underline; }
+    .suggest-card .card-contact-none {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px; color: rgba(240,236,228,0.2);
+      font-style: italic;
+    }
+    .suggest-card .card-contact-note {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px; color: rgba(240,236,228,0.27);
+      font-style: italic; margin-top: 4px;
+    }
+
     /* ── Admin raw panel ── */
     .suggest-admin-raw-panel {
       margin-top: 40px;
@@ -258,6 +288,93 @@ function injectStyles() {
     }
   `
   document.head.appendChild(s)
+}
+
+// ── Contact info section ─────────────────────────────────────────────────────
+
+function buildContactInfo(person) {
+  const section = document.createElement('div')
+  section.className = 'card-contact'
+
+  const label = document.createElement('div')
+  label.className = 'card-contact-label'
+  label.textContent = 'Contact Info'
+  section.appendChild(label)
+
+  const hasEmail    = person.email    && person.email.trim()
+  const hasLinkedIn = person.linkedin && person.linkedin.trim()
+  const hasWebsite  = person.website  && person.website.trim()
+  const hasBooks    = Array.isArray(person.books) && person.books.length > 0
+  const note        = (person.contact_note || person.reachability_notes || '').trim()
+
+  if (!hasEmail && !hasLinkedIn && !hasWebsite && !hasBooks && !note) {
+    const none = document.createElement('div')
+    none.className = 'card-contact-none'
+    none.textContent = 'No public contact info found'
+    section.appendChild(none)
+    return section
+  }
+
+  if (hasEmail) {
+    const row = document.createElement('div')
+    row.className = 'card-contact-row'
+    const a = document.createElement('a')
+    a.className = 'card-contact-link'
+    a.href = 'mailto:' + person.email.trim()
+    a.textContent = person.email.trim()
+    a.target = '_blank'; a.rel = 'noopener noreferrer'
+    row.appendChild(document.createTextNode('Email: '))
+    row.appendChild(a)
+    section.appendChild(row)
+  }
+
+  if (hasLinkedIn) {
+    const row = document.createElement('div')
+    row.className = 'card-contact-row'
+    const a = document.createElement('a')
+    a.className = 'card-contact-link'
+    a.href = person.linkedin.trim()
+    a.textContent = 'LinkedIn'
+    a.target = '_blank'; a.rel = 'noopener noreferrer'
+    row.appendChild(document.createTextNode('LinkedIn: '))
+    row.appendChild(a)
+    section.appendChild(row)
+  }
+
+  if (hasWebsite) {
+    const row = document.createElement('div')
+    row.className = 'card-contact-row'
+    const a = document.createElement('a')
+    a.className = 'card-contact-link'
+    a.href = person.website.trim()
+    a.textContent = person.website.trim()
+    a.target = '_blank'; a.rel = 'noopener noreferrer'
+    row.appendChild(document.createTextNode('Website: '))
+    row.appendChild(a)
+    section.appendChild(row)
+  }
+
+  if (hasBooks) {
+    person.books.forEach(book => {
+      if (!book.title) return
+      const row = document.createElement('div')
+      row.className = 'card-contact-row'
+      const parts = [book.title]
+      if (book.publisher) parts.push(book.publisher)
+      if (book.year) parts.push(book.year)
+      row.textContent = 'Book: ' + parts.join(' — ')
+      section.appendChild(row)
+    })
+  }
+
+  if (note) {
+    const n = document.createElement('div')
+    n.className = 'card-contact-note'
+    n.textContent = note
+    section.appendChild(n)
+  }
+
+  return section
 }
 
 // ── Card builder ─────────────────────────────────────────────────────────────
@@ -311,6 +428,10 @@ function buildCard(person, searchHash) {
       why: person.why,
       url: person.url,
       platform: person.platform,
+      email: person.email || '',
+      linkedin: person.linkedin || '',
+      website: person.website || '',
+      books: person.books || [],
       status: 'IDENTIFIED',
       notes: '',
       last_interaction: '',
@@ -332,6 +453,7 @@ function buildCard(person, searchHash) {
   card.appendChild(header)
   card.appendChild(role)
   card.appendChild(why)
+  card.appendChild(buildContactInfo(person))
   card.appendChild(footer)
 
   return card

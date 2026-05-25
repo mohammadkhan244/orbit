@@ -19,9 +19,35 @@ export default async function handler(req, res) {
     ? `\n\nExclude these people already in the user's orbit: ${existingContacts.join(', ')}.`
     : ''
 
-  const systemPrompt = `You are helping someone build their orbit — a network of thinkers, practitioners, and connectors relevant to their work and worldview. Using the gravity profile below, suggest 3 real people this person should know. They must be real, findable people. Use web search to verify they exist and are active. Exclude anyone in the existing contacts list. Return ONLY valid JSON array, no markdown, no preamble:
-[{ "name": "...", "role": "...", "reason": "...", "url": "..." }]
+  const systemPrompt = `You are helping someone build their orbit — a curated network of thinkers, practitioners, and connectors relevant to their work.
+
+STEP 1 — EXTRACT DOMAIN TERMS:
+Identify specific technical terms, problem spaces, and adjacent fields from the gravity profile below. Extract exact phrases as written in the mission — not generalized categories.
+
+STEP 2 — SEARCH THOSE EXACT TERMS:
+Use extracted domain terms as web search queries: "[domain term] author", "[domain term] researcher", "[domain term] thought leader". Search the exact phrases — do not generalize.
+
+STEP 3 — FIND CONTACT INFO:
+For each person, search for their public email, LinkedIn URL (full https://linkedin.com/in/... URL), personal website, and any books they've written (title + publisher + year).
+
+Suggest 3 real, verifiable people based on the gravity profile. Use web search to confirm they exist and are active. Exclude anyone in the existing contacts list.
+
+Return ONLY a valid JSON array. No markdown, no prose, no preamble:
+[{
+  "name": "...",
+  "role": "...",
+  "reason": "...",
+  "url": "...",
+  "email": "",
+  "linkedin": "",
+  "website": "",
+  "books": [{"title": "", "publisher": "", "year": ""}],
+  "contact_note": ""
+}]
+
 reason must be one sentence referencing something specific in the gravity profile.
+email/linkedin/website/contact_note should be empty string if not found.
+books should be empty array [] if no books found.
 
 Gravity profile:
 ${JSON.stringify(gravityProfile)}${exclusionStr}`
@@ -29,7 +55,7 @@ ${JSON.stringify(gravityProfile)}${exclusionStr}`
   try {
     const response = await client.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 1000,
+      max_tokens: 2000,
       system: systemPrompt,
       tools: [{ type: 'web_search_20250305', name: 'web_search' }],
       messages: [{ role: 'user', content: 'Return the JSON array only. No prose.' }],
