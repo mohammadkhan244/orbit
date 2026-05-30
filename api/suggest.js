@@ -59,11 +59,14 @@ export default async function handler(req, res) {
   try {
     const response = await client.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 5000,
+      max_tokens: 8000,
       system: systemPrompt,
       tools: [{ type: 'web_search_20250305', name: 'web_search' }],
       messages: [{ role: 'user', content: 'Return the JSON only. No prose.' }],
     })
+
+    const blockTypes = response.content.map(b => b.type).join(', ')
+    console.log('[suggest] stop_reason:', response.stop_reason, '| blocks:', blockTypes)
 
     const raw = response.content
       .filter(b => b.type === 'text')
@@ -71,6 +74,13 @@ export default async function handler(req, res) {
       .join('')
 
     console.log('[suggest] raw response length:', raw.length, 'preview:', raw.slice(0, 200))
+
+    if (!raw) {
+      throw new Error(
+        `No text block in response. stop_reason=${response.stop_reason} blocks=[${blockTypes}]`
+      )
+    }
+
     const start = raw.indexOf('{')
     const end = raw.lastIndexOf('}')
     if (start === -1 || end === -1) throw new Error('No JSON object found in response. Raw: ' + raw.slice(0, 300))
