@@ -22,6 +22,25 @@ function hashStr(str) {
 
 const SEARCH_CONSTRAINT = '\n\nUse web search sparingly. Maximum 3 searches total. Do not search more than necessary to verify a person is real.'
 
+async function extractSynonyms(profileText) {
+  try {
+    const r = await client.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 300,
+      system: 'You are a vocabulary expander. Given a profile, extract 4-5 alternative terms or phrases that describe the same domain. Return ONLY a JSON array of strings. No markdown, no preamble. Example: ["narrative prototyping", "futures literacy", "scenario fiction", "speculative strategy"]',
+      messages: [{ role: 'user', content: profileText }],
+    })
+    const text = r.content.find(b => b.type === 'text')?.text || ''
+    const start = text.indexOf('[')
+    const end = text.lastIndexOf(']')
+    if (start === -1 || end === -1) return []
+    const arr = JSON.parse(text.slice(start, end + 1))
+    return Array.isArray(arr) ? arr.filter(s => typeof s === 'string') : []
+  } catch {
+    return []
+  }
+}
+
 function trackTokens(sessionId, feature, inputTokens, outputTokens) {
   const sid = sessionId || 'guest'
   const total = inputTokens + outputTokens
@@ -85,7 +104,13 @@ export default async function handler(req, res) {
     ews_story: identityPack.ews_story || '',
   }
 
-  const systemPrompt = (SEARCH_SYSTEM_PROMPT + SEARCH_CONSTRAINT)
+  const profileText = [query.trim(), slimIdentity.mission].filter(Boolean).join('. ')
+  const synonyms = await extractSynonyms(profileText)
+  const synonymInjection = synonyms.length > 0
+    ? `\n\nSearch using ALL of the following terms, not just the literal query: ${synonyms.join(', ')}. The user may not know these terms themselves — that is why you must search them.`
+    : ''
+
+  const systemPrompt = (SEARCH_SYSTEM_PROMPT + SEARCH_CONSTRAINT + synonymInjection)
     .replace('[USER_NAME]', slimIdentity.name || 'the user')
     .replace('[IDENTITY_PACK]', JSON.stringify(slimIdentity))
     .replace('[EWS_STORY]', slimIdentity.ews_story)
@@ -118,7 +143,7 @@ export default async function handler(req, res) {
 
     // Cache and track tokens (fire and forget)
     if (cacheKey) {
-      kv.set(cacheKey, { ...parsed, _ts: now }, { ex: 86400 }).catch(() => {})
+      kv.set(cacheKey, { ...parsed, synonyms, _ts: now }, { ex: 86400 }).catch(() => {})
     }
     if (response.usage) {
       trackTokens(sessionId, 'search', response.usage.input_tokens || 0, response.usage.output_tokens || 0)
@@ -126,7 +151,7 @@ export default async function handler(req, res) {
 
     kv.incr('stats:search:total').catch(() => {})
     if (isGuest) kv.incr('stats:guests:total').catch(() => {})
-    return res.status(200).json({ ...parsed, search_hash })
+    return res.status(200).json({ ...parsed, search_hash, synonyms })
   } catch (err) {
     console.error('[search]', err)
     return res.status(500).json({ error: 'Search failed', detail: err.message })

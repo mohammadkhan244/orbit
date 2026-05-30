@@ -262,6 +262,31 @@ function injectStyles() {
       font-style: italic; margin-top: 4px;
     }
 
+    /* ── Synonym chips ── */
+    .synonym-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 14px 0 0;
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(184,115,51,0.07);
+    }
+    .synonym-label {
+      font-family: 'Courier Prime', monospace;
+      font-size: 9px; letter-spacing: 0.2em;
+      color: rgba(240,236,228,0.2);
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .synonym-chip {
+      font-family: 'Courier Prime', monospace;
+      font-size: 9px; letter-spacing: 0.1em;
+      color: rgba(184,115,51,0.65);
+      border: 1px solid rgba(184,115,51,0.25);
+      padding: 3px 8px;
+    }
+
     /* ── Admin raw panel ── */
     .suggest-admin-raw-panel {
       margin-top: 40px;
@@ -288,6 +313,25 @@ function injectStyles() {
     }
   `
   document.head.appendChild(s)
+}
+
+// ── Synonym bar ──────────────────────────────────────────────────────────────
+
+function renderSynonyms(synonyms, container) {
+  if (!synonyms || synonyms.length === 0) return
+  const bar = document.createElement('div')
+  bar.className = 'synonym-bar'
+  const label = document.createElement('span')
+  label.className = 'synonym-label'
+  label.textContent = 'Searched using'
+  bar.appendChild(label)
+  synonyms.forEach(term => {
+    const chip = document.createElement('span')
+    chip.className = 'synonym-chip'
+    chip.textContent = term
+    bar.appendChild(chip)
+  })
+  container.appendChild(bar)
 }
 
 // ── Contact info section ─────────────────────────────────────────────────────
@@ -577,6 +621,8 @@ function init() {
 
     resultsLabel.textContent = `${people.length} suggestion${people.length === 1 ? '' : 's'}`
     resultsTs.textContent = meta?.timestamp ? 'Generated ' + formatTime(meta.timestamp) : ''
+
+    renderSynonyms(data.synonyms || [], resultsEl)
 
     const CATS = ['PRACTITIONER', 'THEORIST', 'CONNECTOR']
     const grouped = {}
