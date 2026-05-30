@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ORBIT — Find the people working on your problem</title>
+  <title>ORBIT — Find the people obsessed with your problem</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet" />
@@ -115,7 +115,7 @@
     .body-text {
       font-size: 15px;
       font-weight: 300;
-      color: rgba(240,236,228,0.58);
+      color: rgba(240,236,228,0.85);
       line-height: 1.8;
     }
     .body-text p { margin-bottom: 20px; }
@@ -150,9 +150,18 @@
     .hero-sub {
       font-size: 17px;
       font-weight: 300;
-      color: rgba(240,236,228,0.5);
+      color: rgba(240,236,228,0.8);
       line-height: 1.68;
-      margin-bottom: 52px;
+      margin-bottom: 16px;
+      max-width: 480px;
+    }
+
+    .hero-tagline {
+      font-size: 14px;
+      font-weight: 300;
+      color: rgba(240,236,228,0.35);
+      line-height: 1.6;
+      margin-bottom: 48px;
       max-width: 480px;
     }
 
@@ -253,7 +262,7 @@
     .step-body {
       font-size: 15px;
       font-weight: 300;
-      color: rgba(240,236,228,0.65);
+      color: rgba(240,236,228,0.85);
       line-height: 1.7;
       padding-top: 8px;
     }
@@ -318,7 +327,7 @@
     .login-card-body {
       font-size: 14px;
       font-weight: 300;
-      color: rgba(240,236,228,0.45);
+      color: rgba(240,236,228,0.75);
       line-height: 1.6;
       margin-bottom: 24px;
     }
@@ -381,7 +390,7 @@
       min-height: 1.2em;
     }
     .login-msg a { color: #b87333; text-decoration: underline; }
-    .login-msg.ok { color: rgba(240,236,228,0.45); }
+    .login-msg.ok { color: rgba(240,236,228,0.75); }
 
     /* ── Footer ──────────────────────────────────────────────────────────────── */
 
@@ -436,8 +445,9 @@
   <section class="section-hero">
     <div class="inner">
       <p class="eyebrow">// Modern Myths · Network Intelligence</p>
-      <h1 class="hero-headline">Find the people working on your problem</h1>
-      <p class="hero-sub">The ones who'll change your trajectory aren't in your industry. ORBIT maps you to people who share your questions — not your job title.</p>
+      <h1 class="hero-headline">Find the people obsessed with your problem</h1>
+      <p class="hero-sub">ORBIT maps who you think like — not what industry you're in.</p>
+      <p class="hero-tagline">The ones who'll change your trajectory aren't in your field.</p>
       <div class="hero-ctas">
         <a class="btn-primary" href="/orbit">Build your orbit</a>
         <a class="hero-signin" href="#login">Returning? Sign in</a>
@@ -464,7 +474,6 @@
     <div class="inner">
       <div class="pullquote">
         <p class="pullquote-text">"Proximity isn't alignment."</p>
-        <p class="pullquote-sub">LinkedIn maps who you work near. ORBIT maps who you think like.</p>
       </div>
     </div>
   </section>
