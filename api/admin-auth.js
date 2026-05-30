@@ -26,6 +26,44 @@ export default async function handler(req, res) {
       }
     }
 
+    if (action === 'tokens') {
+      try {
+        const [totalInput, totalOutput,
+               searchCount, suggestCount, suggestOrbitCount,
+               searchTokens, suggestTokens, suggestOrbitTokens] = await Promise.all([
+          kv.get('orbit:tokens:total:input'),
+          kv.get('orbit:tokens:total:output'),
+          kv.get('orbit:tokens:count:search'),
+          kv.get('orbit:tokens:count:suggest'),
+          kv.get('orbit:tokens:count:suggest-orbit'),
+          kv.get('orbit:tokens:feature:search'),
+          kv.get('orbit:tokens:feature:suggest'),
+          kv.get('orbit:tokens:feature:suggest-orbit'),
+        ])
+        const summaryKeys = await kv.keys('orbit:tokens:summary:*')
+        const summaries = summaryKeys.length > 0
+          ? await Promise.all(summaryKeys.map(k => kv.get(k)))
+          : []
+        const users = summaries
+          .filter(Boolean)
+          .sort((a, b) => (b.totalInput + b.totalOutput) - (a.totalInput + a.totalOutput))
+        return res.status(200).json({
+          totalInput:        totalInput        || 0,
+          totalOutput:       totalOutput       || 0,
+          searchCount:       searchCount       || 0,
+          suggestCount:      suggestCount      || 0,
+          suggestOrbitCount: suggestOrbitCount || 0,
+          searchTokens:      searchTokens      || 0,
+          suggestTokens:     suggestTokens     || 0,
+          suggestOrbitTokens: suggestOrbitTokens || 0,
+          users,
+        })
+      } catch (err) {
+        console.error('[admin-auth] tokens GET failed', err)
+        return res.status(502).json({ error: 'KV unavailable', detail: err.message })
+      }
+    }
+
     if (action === 'stats') {
       try {
         const [searches, suggests, orbitsBuilt, contactsAdded, guests, apertureUp, apertureDown] = await Promise.all([

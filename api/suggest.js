@@ -20,7 +20,28 @@ function hashStr(str) {
   return createHash('sha256').update(str).digest('hex').slice(0, 16)
 }
 
-const SEARCH_CONSTRAINT = '\n\nUse web search sparingly — maximum 3 searches total. Search once for the domain, once to verify each person is real. Do not search more than necessary.'
+const SEARCH_CONSTRAINT = '\n\nUse web search sparingly. Maximum 3 searches total. Do not search more than necessary to verify a person is real.'
+
+function trackTokens(sessionId, feature, inputTokens, outputTokens) {
+  const sid = sessionId || 'guest'
+  const total = inputTokens + outputTokens
+  kv.set(`orbit:tokens:${sid}:${feature}:${Date.now()}`, {
+    input_tokens: inputTokens, output_tokens: outputTokens,
+    total_tokens: total, feature, sessionId: sid,
+    date: new Date().toISOString(),
+  }, { ex: 7776000 }).catch(() => {})
+  kv.incrby('orbit:tokens:total:input', inputTokens).catch(() => {})
+  kv.incrby('orbit:tokens:total:output', outputTokens).catch(() => {})
+  kv.incrby('orbit:tokens:feature:suggest', total).catch(() => {})
+  kv.incr('orbit:tokens:count:suggest').catch(() => {})
+  kv.get(`orbit:tokens:summary:${sid}`).then(s => {
+    const summary = s || { sessionId: sid, totalInput: 0, totalOutput: 0, searches: 0, suggests: 0, suggestOrbits: 0 }
+    summary.totalInput += inputTokens
+    summary.totalOutput += outputTokens
+    summary.suggests = (summary.suggests || 0) + 1
+    return kv.set(`orbit:tokens:summary:${sid}`, summary)
+  }).catch(() => {})
+}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -29,7 +50,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
-  const { ewsStory = '', identityPack: clientIdentityPack, isGuest } = req.body ?? {}
+  const { ewsStory = '', identityPack: clientIdentityPack, isGuest, sessionId } = req.body ?? {}
 
   const search_hash = hashStr('suggest' + ewsStory)
   const now = Date.now()
@@ -39,18 +60,27 @@ export default async function handler(req, res) {
   }
   recentHashes.set(search_hash, now)
 
-  // identityPack from client takes precedence; hardcoded is fallback only
+  // KV cache — return cached suggest results if generated within 24 hours
+  if (sessionId) {
+    try {
+      const cached = await kv.get(`orbit:suggest:results:${sessionId}`)
+      if (cached && cached._ts && now - cached._ts < 86_400_000) {
+        console.log('[suggest] returning cached results for', sessionId)
+        return res.status(200).json({ ...cached, search_hash, _cached: true })
+      }
+    } catch {}
+  }
+
   const identityPack = {
     ...(clientIdentityPack || IDENTITY_PACK),
     ...(ewsStory ? { ews_story: ewsStory } : {}),
   }
-  // Slim identity — only what Claude needs
   const slimIdentity = {
     name: identityPack.name,
     mission: identityPack.mission,
     worldview: identityPack.worldview,
     north_stars: identityPack.north_stars,
-    ews_story: identityPack.ews_story || ''
+    ews_story: identityPack.ews_story || '',
   }
 
   const systemPrompt = (SUGGEST_SYSTEM_PROMPT + SEARCH_CONSTRAINT)
@@ -63,35 +93,38 @@ export default async function handler(req, res) {
     let finalText = null
     let iterations = 0
     let lastStopReason = null
-    const MAX_ITERATIONS = 5
+    let totalInputTokens = 0
+    let totalOutputTokens = 0
+    const MAX_ITERATIONS = 3
 
     while (iterations < MAX_ITERATIONS) {
       iterations++
 
       const response = await client.messages.create({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 8000,
+        max_tokens: 1000,
         system: systemPrompt,
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         messages,
       })
 
-      const { stop_reason, content } = response
+      const { stop_reason, content, usage } = response
       lastStopReason = stop_reason
+      if (usage) {
+        totalInputTokens += usage.input_tokens || 0
+        totalOutputTokens += usage.output_tokens || 0
+      }
       const blockTypes = content.map(b => b.type).join(', ')
-      console.log(`[suggest] iter=${iterations} stop_reason=${stop_reason} blocks=[${blockTypes}]`)
+      console.log(`[suggest] iter=${iterations} stop_reason=${stop_reason} blocks=[${blockTypes}] tokens=${JSON.stringify(usage)}`)
 
-      // Append assistant turn
       messages.push({ role: 'assistant', content })
 
-      // Check for text block first
       const textBlock = content.find(b => b.type === 'text')
       if (textBlock) {
         finalText = textBlock.text
         break
       }
 
-      // pause_turn / tool_use — tool calls were made, feed results back and continue
       if (stop_reason === 'pause_turn' || stop_reason === 'tool_use') {
         const toolResults = content.filter(b =>
           b.type === 'web_search_tool_result' || b.type === 'server_tool_use'
@@ -100,14 +133,11 @@ export default async function handler(req, res) {
         continue
       }
 
-      // Any other stop_reason (end_turn with no text, max_tokens, etc.) — stop
       break
     }
 
     if (!finalText) {
-      throw new Error(
-        `No text block after ${iterations} iterations. last stop_reason=${lastStopReason}`
-      )
+      throw new Error(`No text block after ${iterations} iterations. last stop_reason=${lastStopReason}`)
     }
 
     console.log('[suggest] finalText length:', finalText.length, 'preview:', finalText.slice(0, 200))
@@ -117,6 +147,12 @@ export default async function handler(req, res) {
     if (start === -1 || end === -1) throw new Error('No JSON object found in response. Raw: ' + finalText.slice(0, 300))
     const parsed = JSON.parse(finalText.slice(start, end + 1))
     parsed.people?.forEach(p => { if (!p.id) p.id = crypto.randomUUID() })
+
+    // Cache results and track tokens (fire and forget)
+    if (sessionId) {
+      kv.set(`orbit:suggest:results:${sessionId}`, { ...parsed, _ts: now }).catch(() => {})
+    }
+    trackTokens(sessionId, 'suggest', totalInputTokens, totalOutputTokens)
 
     kv.incr('stats:suggest:total').catch(() => {})
     if (isGuest) kv.incr('stats:guests:total').catch(() => {})

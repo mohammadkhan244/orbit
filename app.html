@@ -458,6 +458,84 @@
       text-transform: uppercase;
     }
 
+    /* ── ADMIN TOKEN SECTION ── */
+    .admin-tokens-section {
+      padding: 28px 40px 0;
+    }
+    .admin-tokens-eyebrow {
+      font-family: 'Courier Prime', monospace;
+      font-size: 9px; letter-spacing: 0.22em;
+      color: rgba(184,115,51,0.55);
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .admin-tokens-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: rgba(184,115,51,0.08);
+      border: 1px solid rgba(184,115,51,0.08);
+      margin-bottom: 24px;
+    }
+    .admin-token-cell {
+      background: #0a0a0a;
+      padding: 14px 16px;
+    }
+    .admin-token-num {
+      font-family: 'Courier Prime', monospace;
+      font-size: 16px; font-weight: 700;
+      color: #b87333; display: block;
+      margin-bottom: 3px;
+    }
+    .admin-token-label {
+      font-family: 'Courier Prime', monospace;
+      font-size: 8px; letter-spacing: 0.14em;
+      color: rgba(240,236,228,0.3);
+      text-transform: uppercase;
+    }
+    .admin-tokens-features {
+      display: flex; gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .admin-feature-chip {
+      border: 1px solid rgba(184,115,51,0.15);
+      padding: 10px 14px;
+      font-family: 'Courier Prime', monospace;
+      font-size: 11px;
+      color: rgba(240,236,228,0.55);
+    }
+    .admin-feature-chip strong {
+      color: #f0ece4; display: block;
+      font-size: 14px; margin-bottom: 2px;
+    }
+    .admin-tokens-table {
+      width: 100%; border-collapse: collapse;
+      margin-bottom: 40px;
+    }
+    .admin-tokens-table th {
+      font-family: 'Courier Prime', monospace;
+      font-size: 8px; letter-spacing: 0.16em;
+      color: rgba(184,115,51,0.55);
+      text-transform: uppercase;
+      text-align: left; padding: 8px 10px;
+      border-bottom: 1px solid rgba(184,115,51,0.10);
+    }
+    .admin-tokens-table td {
+      font-family: 'Courier Prime', monospace;
+      font-size: 12px;
+      color: rgba(240,236,228,0.65);
+      padding: 10px 10px;
+      border-bottom: 1px solid rgba(184,115,51,0.05);
+    }
+    .admin-tokens-table td:first-child { color: #b87333; }
+    .admin-tokens-empty {
+      font-family: 'Courier Prime', monospace;
+      font-size: 12px;
+      color: rgba(240,236,228,0.2);
+      padding: 16px 0;
+    }
+
     /* ── APERTURE VIEW ── */
     #aperture-view.active {
       display: flex;
@@ -1548,6 +1626,92 @@
           })
         })
         .catch(() => { statsBar.remove() })
+
+      // Token usage section
+      const tokensSection = document.createElement('div')
+      tokensSection.className = 'admin-tokens-section'
+      container.appendChild(tokensSection)
+      fetch(`/api/admin-auth?action=tokens&code=${encodeURIComponent(code)}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(t => {
+          if (!t) return
+          const totalTokens = (t.totalInput || 0) + (t.totalOutput || 0)
+          const estCost = ((t.totalInput || 0) * 0.000003 + (t.totalOutput || 0) * 0.000015).toFixed(4)
+
+          const eyebrow = document.createElement('div')
+          eyebrow.className = 'admin-tokens-eyebrow'
+          eyebrow.textContent = 'Token Usage — All Time'
+          tokensSection.appendChild(eyebrow)
+
+          const grid = document.createElement('div')
+          grid.className = 'admin-tokens-grid'
+          ;[
+            { num: (t.totalInput || 0).toLocaleString(),  label: 'Input Tokens' },
+            { num: (t.totalOutput || 0).toLocaleString(), label: 'Output Tokens' },
+            { num: totalTokens.toLocaleString(),          label: 'Total Tokens' },
+            { num: '$' + estCost,                         label: 'Est. Cost' },
+          ].forEach(item => {
+            const cell = document.createElement('div')
+            cell.className = 'admin-token-cell'
+            const num = document.createElement('span')
+            num.className = 'admin-token-num'
+            num.textContent = item.num
+            const lbl = document.createElement('span')
+            lbl.className = 'admin-token-label'
+            lbl.textContent = item.label
+            cell.appendChild(num)
+            cell.appendChild(lbl)
+            grid.appendChild(cell)
+          })
+          tokensSection.appendChild(grid)
+
+          const features = document.createElement('div')
+          features.className = 'admin-tokens-features'
+          ;[
+            { label: 'Search',        tokens: t.searchTokens,      count: t.searchCount },
+            { label: 'Suggest',       tokens: t.suggestTokens,     count: t.suggestCount },
+            { label: 'Suggest-Orbit', tokens: t.suggestOrbitTokens, count: t.suggestOrbitCount },
+          ].forEach(f => {
+            const chip = document.createElement('div')
+            chip.className = 'admin-feature-chip'
+            chip.innerHTML = `<strong>${(f.tokens || 0).toLocaleString()} tokens</strong>${f.label} — ${f.count || 0} calls`
+            features.appendChild(chip)
+          })
+          tokensSection.appendChild(features)
+
+          // Per-user table
+          const tableEyebrow = document.createElement('div')
+          tableEyebrow.className = 'admin-tokens-eyebrow'
+          tableEyebrow.textContent = 'Per-User Usage'
+          tokensSection.appendChild(tableEyebrow)
+
+          if (!t.users || t.users.length === 0) {
+            const empty = document.createElement('div')
+            empty.className = 'admin-tokens-empty'
+            empty.textContent = 'No token data recorded yet.'
+            tokensSection.appendChild(empty)
+          } else {
+            const table = document.createElement('table')
+            table.className = 'admin-tokens-table'
+            table.innerHTML = '<thead><tr><th>Session</th><th>Searches</th><th>Suggests</th><th>Suggest-Orbit</th><th>Total Tokens</th><th>Est. Cost</th></tr></thead>'
+            const tbody = document.createElement('tbody')
+            t.users.forEach(u => {
+              const total = (u.totalInput || 0) + (u.totalOutput || 0)
+              const cost = '$' + ((u.totalInput || 0) * 0.000003 + (u.totalOutput || 0) * 0.000015).toFixed(4)
+              const tr = document.createElement('tr')
+              tr.innerHTML = `<td>${(u.sessionId || '').slice(0, 8)}</td><td>${u.searches || 0}</td><td>${u.suggests || 0}</td><td>${u.suggestOrbits || 0}</td><td>${total.toLocaleString()}</td><td>${cost}</td>`
+              tbody.appendChild(tr)
+            })
+            table.appendChild(tbody)
+            tokensSection.appendChild(table)
+          }
+        })
+        .catch(() => {
+          const err = document.createElement('div')
+          err.className = 'admin-tokens-empty'
+          err.textContent = 'Token data unavailable.'
+          tokensSection.appendChild(err)
+        })
 
       const layout = document.createElement('div')
       layout.className = 'admin-layout'
