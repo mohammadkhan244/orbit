@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ORBIT — Build your orbit</title>
+  <title>ORBIT — Find the people working on your problem</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet" />
@@ -24,7 +24,7 @@
       min-height: 100vh;
     }
 
-    /* ── Sticky Nav ────────────────────────────────────────────────────────── */
+    /* ── Sticky Nav ─────────────────────────────────────────────────────────── */
 
     .nav {
       position: fixed;
@@ -72,19 +72,27 @@
       border-color: #b87333;
     }
 
-    /* ── Layout ────────────────────────────────────────────────────────────── */
+    /* ── Inner content container ─────────────────────────────────────────────── */
 
-    .page {
+    .inner {
       max-width: 680px;
       margin: 0 auto;
       padding: 0 32px;
     }
 
-    .section-divider {
-      border: none;
-      border-top: 1px solid rgba(184,115,51,0.1);
-      margin: 88px 0;
+    /* ── Section backgrounds ─────────────────────────────────────────────────── */
+
+    .section-dark {
+      background: #0a0a0a;
+      padding: 96px 0;
     }
+
+    .section-alt {
+      background: rgba(184,115,51,0.06);
+      padding: 96px 0;
+    }
+
+    /* ── Shared typography ───────────────────────────────────────────────────── */
 
     .eyebrow {
       font-family: 'Courier Prime', monospace;
@@ -95,14 +103,37 @@
       margin-bottom: 28px;
     }
 
-    /* ── Hero ──────────────────────────────────────────────────────────────── */
+    .section-headline {
+      font-family: 'Courier Prime', monospace;
+      font-size: clamp(20px, 3.5vw, 30px);
+      font-weight: 400;
+      color: #f0ece4;
+      line-height: 1.25;
+      margin-bottom: 36px;
+    }
 
-    .hero {
+    .body-text {
+      font-size: 15px;
+      font-weight: 300;
+      color: rgba(240,236,228,0.58);
+      line-height: 1.8;
+    }
+    .body-text p { margin-bottom: 20px; }
+    .body-text p:last-child { margin-bottom: 0; }
+
+    /* ── Hero ────────────────────────────────────────────────────────────────── */
+
+    .section-hero {
+      background: #0a0a0a;
       min-height: 100vh;
       display: flex;
-      flex-direction: column;
-      justify-content: center;
+      align-items: center;
       padding-top: 56px;
+    }
+
+    .section-hero .inner {
+      padding-top: 64px;
+      padding-bottom: 64px;
     }
 
     .hero-headline {
@@ -159,67 +190,101 @@
     }
     .hero-signin:hover { color: #b87333; }
 
-    /* ── Problem ───────────────────────────────────────────────────────────── */
+    /* ── Pull quote ──────────────────────────────────────────────────────────── */
 
-    .section-headline {
+    .pullquote {
+      text-align: center;
+      padding: 16px 0;
+    }
+
+    .pullquote-text {
+      font-family: 'Courier Prime', monospace;
+      font-size: clamp(1.5rem, 4vw, 2rem);
+      font-weight: 400;
+      color: #b87333;
+      line-height: 1.3;
+      margin-bottom: 20px;
+    }
+
+    .pullquote-sub {
+      font-size: 14px;
+      font-weight: 300;
+      color: rgba(240,236,228,0.35);
+      line-height: 1.65;
+      letter-spacing: 0.02em;
+    }
+
+    /* ── How it works steps ──────────────────────────────────────────────────── */
+
+    .steps-headline {
       font-family: 'Courier Prime', monospace;
       font-size: clamp(20px, 3.5vw, 30px);
       font-weight: 400;
       color: #f0ece4;
       line-height: 1.25;
-      margin-bottom: 32px;
+      margin-bottom: 48px;
     }
-
-    .body-text {
-      font-size: 15px;
-      font-weight: 300;
-      color: rgba(240,236,228,0.58);
-      line-height: 1.75;
-    }
-    .body-text p { margin-bottom: 18px; }
-    .body-text p:last-child { margin-bottom: 0; }
-
-    /* ── How it works ──────────────────────────────────────────────────────── */
 
     .steps {
-      margin-top: 32px;
       list-style: none;
     }
+
     .step {
       display: flex;
-      gap: 24px;
-      padding: 24px 0;
+      gap: 28px;
+      padding: 36px 0;
       border-bottom: 1px solid rgba(184,115,51,0.08);
+      align-items: flex-start;
     }
-    .step:first-child { border-top: 1px solid rgba(184,115,51,0.08); }
+    .step:first-child {
+      border-top: 1px solid rgba(184,115,51,0.08);
+    }
 
     .step-num {
       font-family: 'Courier Prime', monospace;
-      font-size: 10px;
-      letter-spacing: 0.1em;
-      color: rgba(184,115,51,0.45);
-      padding-top: 3px;
+      font-size: 3rem;
+      font-weight: 400;
+      color: rgba(184,115,51,0.4);
+      line-height: 1;
       flex-shrink: 0;
-      width: 28px;
+      width: 64px;
     }
+
     .step-body {
       font-size: 15px;
       font-weight: 300;
       color: rgba(240,236,228,0.65);
-      line-height: 1.65;
+      line-height: 1.7;
+      padding-top: 8px;
     }
     .step-body strong {
       color: #f0ece4;
       font-weight: 500;
       display: block;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
+      font-family: 'Courier Prime', monospace;
+      font-size: 16px;
     }
 
-    /* ── Why different ─────────────────────────────────────────────────────── */
+    .steps-close {
+      margin-top: 40px;
+      font-family: 'Courier Prime', monospace;
+      font-size: 13px;
+      letter-spacing: 0.05em;
+      color: rgba(184,115,51,0.6);
+      font-style: italic;
+    }
 
-    /* reuses .section-headline and .body-text */
+    /* ── Real reason ─────────────────────────────────────────────────────────── */
 
-    /* ── Login section ─────────────────────────────────────────────────────── */
+    .real-reason-opener {
+      font-size: 14px;
+      font-style: italic;
+      color: rgba(240,236,228,0.3);
+      margin-bottom: 32px;
+    }
+
+    /* ── Login section ───────────────────────────────────────────────────────── */
 
     .login-headline {
       font-family: 'Courier Prime', monospace;
@@ -238,6 +303,7 @@
       flex: 1;
       border: 1px solid rgba(184,115,51,0.15);
       padding: 32px;
+      background: rgba(10,10,10,0.4);
     }
 
     .login-card-label {
@@ -246,6 +312,14 @@
       letter-spacing: 0.2em;
       color: rgba(240,236,228,0.25);
       text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .login-card-body {
+      font-size: 14px;
+      font-weight: 300;
+      color: rgba(240,236,228,0.45);
+      line-height: 1.6;
       margin-bottom: 24px;
     }
 
@@ -269,19 +343,18 @@
 
     .login-email-input {
       width: 100%;
-      background: transparent;
-      border: none;
-      border-bottom: 1px solid rgba(184,115,51,0.35);
+      background: #0a0a0a;
+      border: 1px solid rgba(184,115,51,0.35);
       color: #f0ece4;
       font-family: system-ui, -apple-system, sans-serif;
       font-size: 15px;
-      padding: 10px 0;
+      padding: 10px 12px;
       outline: none;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
       transition: border-color 0.15s ease;
     }
     .login-email-input::placeholder { color: rgba(240,236,228,0.2); }
-    .login-email-input:focus { border-bottom-color: #b87333; }
+    .login-email-input:focus { border-color: #b87333; }
 
     .login-submit {
       display: block;
@@ -310,12 +383,14 @@
     .login-msg a { color: #b87333; text-decoration: underline; }
     .login-msg.ok { color: rgba(240,236,228,0.45); }
 
-    /* ── Footer ────────────────────────────────────────────────────────────── */
+    /* ── Footer ──────────────────────────────────────────────────────────────── */
 
     .footer {
-      margin-top: 120px;
-      padding: 32px 0 48px;
+      background: #0a0a0a;
       border-top: 1px solid rgba(184,115,51,0.08);
+      padding: 32px 0 48px;
+    }
+    .footer .inner {
       font-family: 'Courier Prime', monospace;
       font-size: 10px;
       letter-spacing: 0.18em;
@@ -328,14 +403,16 @@
     }
     .footer a:hover { color: #b87333; }
 
-    /* ── Mobile ────────────────────────────────────────────────────────────── */
+    /* ── Mobile ──────────────────────────────────────────────────────────────── */
 
     @media (max-width: 600px) {
       .nav { padding: 0 20px; }
-      .page { padding: 0 20px; }
-      .section-divider { margin: 64px 0; }
+      .inner { padding: 0 20px; }
+      .section-dark { padding: 72px 0; }
+      .section-alt { padding: 72px 0; }
       .hero-ctas { gap: 20px; }
       .login-cards { flex-direction: column; }
+      .step-num { width: 48px; font-size: 2.25rem; }
     }
   </style>
 </head>
@@ -352,85 +429,103 @@
       </svg>
       <span class="nav-wordmark">ORBIT</span>
     </a>
-    <a class="nav-cta" href="#login">Enter your orbit</a>
+    <a class="nav-cta" href="#login">Enter your orbit &rarr;</a>
   </nav>
 
-  <div class="page">
-
-    <!-- ── Hero ── -->
-    <section class="hero">
+  <!-- ── Hero ── -->
+  <section class="section-hero">
+    <div class="inner">
       <p class="eyebrow">// Modern Myths · Network Intelligence</p>
-      <h1 class="hero-headline">Your network should reflect who you are — not what industry you're in.</h1>
-      <p class="hero-sub">ORBIT maps the people who belong in your world based on your mission, worldview, and how you think.</p>
+      <h1 class="hero-headline">Find the people working on your problem</h1>
+      <p class="hero-sub">The ones who'll change your trajectory aren't in your industry. ORBIT maps you to people who share your questions — not your job title.</p>
       <div class="hero-ctas">
         <a class="btn-primary" href="/orbit">Build your orbit</a>
         <a class="hero-signin" href="#login">Returning? Sign in</a>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <hr class="section-divider" />
-
-    <!-- ── Problem ── -->
-    <section>
-      <h2 class="section-headline">Most networks are built on proximity, not alignment.</h2>
+  <!-- ── Section 1: The Problem ── -->
+  <section class="section-alt">
+    <div class="inner">
+      <h2 class="section-headline">You did the networking right. It still didn't work.</h2>
       <div class="body-text">
-        <p>LinkedIn connects you to people in your industry. That's not the same as people who think like you. Proximity is a weak signal — you end up mapped to colleagues, competitors, and conference contacts instead of the people who are actually working on the same problems.</p>
-        <p>The people who will change your trajectory are usually outside your field. Authors writing about the same questions from a different angle. Researchers with ten years of depth in a domain you're just entering. Practitioners who've already failed at what you're about to try.</p>
-        <p>ORBIT finds them by reading who you are, not what you do.</p>
+        <p>You followed the advice. Reach out. Connect. Stay active. Build the network.</p>
+        <p>And you ended up surrounded by people in your field who are nothing like you.</p>
+        <p>It's not your fault. The starting point was wrong.</p>
+        <p>The people who move your work forward are usually outside your category. The author circling the same question from another angle. The researcher ten years deep in a domain you just entered. The practitioner who already failed at the thing you're about to try.</p>
+        <p>They were never going to show up in a list of people with your job title.</p>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <hr class="section-divider" />
+  <!-- ── Section 2: Pull Quote ── -->
+  <section class="section-dark">
+    <div class="inner">
+      <div class="pullquote">
+        <p class="pullquote-text">"Proximity isn't alignment."</p>
+        <p class="pullquote-sub">LinkedIn maps who you work near. ORBIT maps who you think like.</p>
+      </div>
+    </div>
+  </section>
 
-    <!-- ── How it works ── -->
-    <section>
-      <p class="eyebrow">How it works</p>
+  <!-- ── Section 3: How It Works ── -->
+  <section class="section-alt">
+    <div class="inner">
+      <h2 class="steps-headline">Find your personal gravity</h2>
       <ol class="steps">
         <li class="step">
           <span class="step-num">01</span>
           <span class="step-body">
             <strong>Fill out your gravity profile.</strong>
-            Your mission, worldview, and thinking style. This is your signal — everything ORBIT finds flows from it.
+            Your mission, worldview, how you think.
+            This is the signal. Everything ORBIT finds flows from it.
           </span>
         </li>
         <li class="step">
           <span class="step-num">02</span>
           <span class="step-body">
-            <strong>Get suggested people based on your specific profile.</strong>
-            Real authors, researchers, and practitioners — confirmed by web search, with contact info and a specific reason why they belong in your orbit.
+            <strong>Get real people matched to that signal.</strong>
+            Authors, researchers, practitioners — confirmed by live web search,
+            with contact info and a specific reason each one belongs in your orbit.
           </span>
         </li>
         <li class="step">
           <span class="step-num">03</span>
           <span class="step-body">
-            <strong>Track relationships across 4 stages.</strong>
-            From identified to inner circle. Search for anyone specific. Build deliberately, not by accident.
+            <strong>Track them across four stages.</strong>
+            From identified to inner circle.
+            Build deliberately, not by accident.
           </span>
         </li>
       </ol>
-    </section>
+      <p class="steps-close">No database. No pre-built lists. Just your gravity, translated into names.</p>
+    </div>
+  </section>
 
-    <hr class="section-divider" />
-
-    <!-- ── Why different ── -->
-    <section>
-      <h2 class="section-headline">Search by story, not by industry.</h2>
+  <!-- ── Section 4: The Real Reason ── -->
+  <section class="section-dark">
+    <div class="inner">
+      <p class="real-reason-opener">(We said we'd get to the real reason.)</p>
       <div class="body-text">
-        <p>ORBIT uses your gravity profile as a lens. Two people can have the same job title and belong in completely different orbits. The tool finds the signal in who you are — your exact domain terms, your specific questions, the problems you've named — not the category you fit into.</p>
-        <p>Every suggestion is grounded in a live web search. ORBIT extracts the precise terms from your profile and searches for people active in those exact spaces. No database. No pre-built lists. Just your gravity, translated into names.</p>
+        <p>We mistake having a network for being known.</p>
+        <p>The connections accumulate, the inbox fills, and we tell ourselves we've found our people. But a contact who shares your industry doesn't share your obsession. They never metabolized the question you can't stop asking. They just happened to be standing near you.</p>
+        <p>ORBIT isn't built to grow your network.</p>
+        <p>It's built to find the few people who were working on your problem before you knew it was yours — and put you in the same orbit on purpose.</p>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <hr class="section-divider" />
-
-    <!-- ── Login section ── -->
-    <section id="login">
-      <h2 class="login-headline">Ready to build your orbit?</h2>
+  <!-- ── Section 5: Login ── -->
+  <section class="section-alt" id="login">
+    <div class="inner">
+      <h2 class="login-headline">Ready to find your people?</h2>
       <div class="login-cards">
 
         <!-- New user -->
         <div class="login-card">
           <p class="login-card-label">First time here</p>
+          <p class="login-card-body">Start with your gravity profile. Takes 5 minutes.</p>
           <a class="login-card-cta" href="/orbit">Build your gravity profile</a>
         </div>
 
@@ -449,14 +544,15 @@
         </div>
 
       </div>
-    </section>
+    </div>
+  </section>
 
-    <!-- ── Footer ── -->
-    <footer class="footer">
-      // Modern Myths · &copy; 2026 · <a href="mailto:hello@modernmyths.co">hello@modernmyths.co</a>
-    </footer>
-
-  </div>
+  <!-- ── Footer ── -->
+  <footer class="footer">
+    <div class="inner">
+      // Modern Myths &middot; &copy; 2026 &middot; <a href="mailto:mohammadkhan@themohammadkhan.com">mohammadkhan@themohammadkhan.com</a>
+    </div>
+  </footer>
 
   <script>
     var emailEl  = document.getElementById('login-email')

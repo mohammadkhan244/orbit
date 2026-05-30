@@ -20,6 +20,8 @@ function hashStr(str) {
   return createHash('sha256').update(str).digest('hex').slice(0, 16)
 }
 
+const SEARCH_CONSTRAINT = '\n\nUse web search sparingly — maximum 3 searches total. Search once for the domain, once to verify each person is real. Do not search more than necessary.'
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
@@ -51,40 +53,69 @@ export default async function handler(req, res) {
     ews_story: identityPack.ews_story || ''
   }
 
-  const systemPrompt = SUGGEST_SYSTEM_PROMPT
+  const systemPrompt = (SUGGEST_SYSTEM_PROMPT + SEARCH_CONSTRAINT)
     .replace('[USER_NAME]', slimIdentity.name || 'the user')
     .replace('[IDENTITY_PACK]', JSON.stringify(slimIdentity))
     .replace('[EWS_STORY]', slimIdentity.ews_story)
 
   try {
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 8000,
-      system: systemPrompt,
-      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-      messages: [{ role: 'user', content: 'Return the JSON only. No prose.' }],
-    })
+    const messages = [{ role: 'user', content: 'Return the JSON only. No prose.' }]
+    let finalText = null
+    let iterations = 0
+    let lastStopReason = null
+    const MAX_ITERATIONS = 5
 
-    const blockTypes = response.content.map(b => b.type).join(', ')
-    console.log('[suggest] stop_reason:', response.stop_reason, '| blocks:', blockTypes)
+    while (iterations < MAX_ITERATIONS) {
+      iterations++
 
-    const raw = response.content
-      .filter(b => b.type === 'text')
-      .map(b => b.text)
-      .join('')
+      const response = await client.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 8000,
+        system: systemPrompt,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages,
+      })
 
-    console.log('[suggest] raw response length:', raw.length, 'preview:', raw.slice(0, 200))
+      const { stop_reason, content } = response
+      lastStopReason = stop_reason
+      const blockTypes = content.map(b => b.type).join(', ')
+      console.log(`[suggest] iter=${iterations} stop_reason=${stop_reason} blocks=[${blockTypes}]`)
 
-    if (!raw) {
+      // Append assistant turn
+      messages.push({ role: 'assistant', content })
+
+      // Check for text block first
+      const textBlock = content.find(b => b.type === 'text')
+      if (textBlock) {
+        finalText = textBlock.text
+        break
+      }
+
+      // pause_turn / tool_use — tool calls were made, feed results back and continue
+      if (stop_reason === 'pause_turn' || stop_reason === 'tool_use') {
+        const toolResults = content.filter(b =>
+          b.type === 'web_search_tool_result' || b.type === 'server_tool_use'
+        )
+        if (toolResults.length === 0) break
+        continue
+      }
+
+      // Any other stop_reason (end_turn with no text, max_tokens, etc.) — stop
+      break
+    }
+
+    if (!finalText) {
       throw new Error(
-        `No text block in response. stop_reason=${response.stop_reason} blocks=[${blockTypes}]`
+        `No text block after ${iterations} iterations. last stop_reason=${lastStopReason}`
       )
     }
 
-    const start = raw.indexOf('{')
-    const end = raw.lastIndexOf('}')
-    if (start === -1 || end === -1) throw new Error('No JSON object found in response. Raw: ' + raw.slice(0, 300))
-    const parsed = JSON.parse(raw.slice(start, end + 1))
+    console.log('[suggest] finalText length:', finalText.length, 'preview:', finalText.slice(0, 200))
+
+    const start = finalText.indexOf('{')
+    const end = finalText.lastIndexOf('}')
+    if (start === -1 || end === -1) throw new Error('No JSON object found in response. Raw: ' + finalText.slice(0, 300))
+    const parsed = JSON.parse(finalText.slice(start, end + 1))
     parsed.people?.forEach(p => { if (!p.id) p.id = crypto.randomUUID() })
 
     kv.incr('stats:suggest:total').catch(() => {})
