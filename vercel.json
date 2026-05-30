@@ -1,8 +1,7 @@
 {
   "outputDirectory": ".",
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/orbit", "destination": "/index.html" },
-    { "source": "/", "destination": "/landing.html" }
+    { "source": "/orbit", "destination": "/app.html" },
+    { "source": "/api/(.*)", "destination": "/api/$1" }
   ]
 }
