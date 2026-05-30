@@ -171,42 +171,53 @@ export class OrbitCanvas {
     }
 
     // ── center ──
-    const firstName = window.ORBIT_IDENTITY?.name
-      ? window.ORBIT_IDENTITY.name.split(' ')[0].slice(0, 8).toUpperCase()
-      : null
-    const centerLabelText = firstName || 'YOU'
-    const centerFontSize  = centerLabelText.length > 5 ? '7' : '8'
+    const identName      = window.ORBIT_IDENTITY?.name || ''
+    const centerInitials = identName ? initials(identName) : 'YOU'
+    const centerName     = identName ? identName.split(' ')[0].toUpperCase() : null
+    const initFontSize   = centerInitials.length <= 2 ? '11' : '8'
+    const CENTER_R       = 18
 
     const centerG = document.createElementNS(NS, 'g')
     centerG.style.cursor = 'pointer'
 
-    const centerGlow = svgEl('circle', { cx, cy, r: 40, fill: 'rgba(184,115,51,0.06)' },
-      { filter: 'drop-shadow(0 0 12px rgba(184,115,51,0.5))' })
-    centerG.appendChild(centerGlow)
+    centerG.appendChild(svgEl('circle', { cx, cy, r: 40, fill: 'rgba(184,115,51,0.06)' },
+      { filter: 'drop-shadow(0 0 12px rgba(184,115,51,0.5))' }))
 
     const centerCircle = svgEl('circle', {
-      cx, cy, r: 20,
-      fill: COLORS.bg, stroke: COLORS.accent, 'stroke-width': '1.5',
+      cx, cy, r: CENTER_R, fill: '#b87333',
     }, { filter: 'drop-shadow(0 0 6px rgba(184,115,51,0.65))' })
     centerG.appendChild(centerCircle)
 
-    const centerLabel = svgEl('text', {
-      x: cx, y: cy + 4,
+    const centerInitialsEl = svgEl('text', {
+      x: cx, y: cy + 5,
       'text-anchor': 'middle',
-      fill: COLORS.accent,
+      fill: '#f0ece4',
       'font-family': 'Courier Prime, monospace',
-      'font-size': centerFontSize,
-      'letter-spacing': centerLabelText.length > 5 ? '1' : '2',
-    }, { pointerEvents: 'none' })
-    centerLabel.textContent = centerLabelText
-    centerG.appendChild(centerLabel)
+      'font-size': initFontSize,
+      'font-weight': '700',
+    }, { pointerEvents: 'none', userSelect: 'none' })
+    centerInitialsEl.textContent = centerInitials
+    centerG.appendChild(centerInitialsEl)
+
+    if (centerName) {
+      const centerNameEl = svgEl('text', {
+        x: cx, y: cy + CENTER_R + 14,
+        'text-anchor': 'middle',
+        fill: '#b87333',
+        'font-family': 'Courier Prime, monospace',
+        'font-size': '9',
+        'letter-spacing': '2',
+      }, { pointerEvents: 'none' })
+      centerNameEl.textContent = centerName
+      centerG.appendChild(centerNameEl)
+    }
 
     centerG.addEventListener('mouseenter', () => {
-      centerCircle.setAttribute('stroke', COLORS.text)
-      centerCircle.style.filter = 'drop-shadow(0 0 10px rgba(184,115,51,0.9))'
+      centerCircle.setAttribute('fill', '#c8883c')
+      centerCircle.style.filter = 'drop-shadow(0 0 12px rgba(184,115,51,0.9))'
     })
     centerG.addEventListener('mouseleave', () => {
-      centerCircle.setAttribute('stroke', COLORS.accent)
+      centerCircle.setAttribute('fill', '#b87333')
       centerCircle.style.filter = 'drop-shadow(0 0 6px rgba(184,115,51,0.65))'
     })
     centerG.addEventListener('click', () => {
