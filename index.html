@@ -4,6 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>ORBIT</title>
+  <script>
+    // Guard: index.html must only serve /orbit. If loaded at any other path
+    // (e.g. Vercel static fallback serving index.html for /), redirect to landing.
+    if (location.pathname !== '/orbit' && location.pathname !== '/orbit/') {
+      location.replace('/')
+    }
+  </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
