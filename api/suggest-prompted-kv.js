@@ -25,7 +25,19 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'POST') {
-    const { sessionId } = req.body ?? {}
+    const { sessionId, action, id } = req.body ?? {}
+
+    // Spectator analytics (fire-and-forget KV counters)
+    if (action === 'visit') {
+      kv.incr('orbit:spectator:visits').catch(() => {})
+      return res.status(200).json({ ok: true })
+    }
+    if (action === 'view' && id) {
+      kv.incr(`orbit:demo:views:${id}`).catch(() => {})
+      return res.status(200).json({ ok: true })
+    }
+
+    // Suggest-prompted flag
     if (!sessionId) return res.status(400).json({ error: 'sessionId required' })
     try {
       await kv.set(`orbit:suggest:prompted:${sessionId}`, true, { ex: TTL })

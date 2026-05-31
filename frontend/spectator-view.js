@@ -270,10 +270,10 @@ function showWaitlistModal() {
     btn.textContent = 'Joining…'
     status.textContent = ''
     try {
-      await fetch('/api/waitlist', {
+      await fetch('/api/guest-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: nameInput.value.trim(), email }),
+        body: JSON.stringify({ waitlist: true, name: nameInput.value.trim(), email }),
       })
       status.textContent = "You're on the list. We'll be in touch."
       btn.textContent = 'Joined'
@@ -303,7 +303,7 @@ async function init() {
   injectStyles()
 
   // Fire-and-forget visit counter
-  fetch('/api/spectator-analytics', {
+  fetch('/api/suggest-prompted-kv', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action: 'visit' }),
@@ -434,7 +434,7 @@ async function init() {
     canvas.update(orbit.contacts)
 
     // Track view (fire-and-forget)
-    fetch('/api/spectator-analytics', {
+    fetch('/api/suggest-prompted-kv', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'view', id: orbit.id }),
