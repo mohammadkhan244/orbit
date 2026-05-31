@@ -64,6 +64,36 @@ export default async function handler(req, res) {
       }
     }
 
+    if (action === 'spectator-stats') {
+      try {
+        const [visits, demoViewKeys, waitlistKeys] = await Promise.all([
+          kv.get('orbit:spectator:visits'),
+          kv.keys('orbit:demo:views:*'),
+          kv.keys('orbit:waitlist:*'),
+        ])
+        const demoViews = demoViewKeys.length > 0
+          ? await Promise.all(demoViewKeys.map(async k => ({
+              id: k.replace('orbit:demo:views:', ''),
+              views: (await kv.get(k)) || 0,
+            })))
+          : []
+        demoViews.sort((a, b) => b.views - a.views)
+
+        const waitlistEntries = waitlistKeys.length > 0
+          ? await Promise.all(waitlistKeys.map(k => kv.get(k)))
+          : []
+
+        return res.status(200).json({
+          spectatorVisits: visits || 0,
+          demoViews,
+          waitlist: waitlistEntries.filter(Boolean),
+        })
+      } catch (err) {
+        console.error('[admin-auth] spectator-stats GET failed', err)
+        return res.status(502).json({ error: 'KV unavailable', detail: err.message })
+      }
+    }
+
     if (action === 'stats') {
       try {
         const [searches, suggests, orbitsBuilt, contactsAdded, guests, apertureUp, apertureDown] = await Promise.all([

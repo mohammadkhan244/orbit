@@ -564,6 +564,48 @@
   </footer>
 
   <script>
+    // Check capacity on load — swap CTAs if ORBIT is full
+    ;(function() {
+      fetch('/api/identity?checkCap=true')
+        .then(function(r) { return r.ok ? r.json() : null })
+        .then(function(data) {
+          if (!data || data.mode !== 'spectator') return
+
+          // Swap primary CTA
+          var primaryCta = document.querySelector('.btn-primary')
+          if (primaryCta) {
+            primaryCta.textContent = 'Explore 10 demo orbits'
+            primaryCta.href = '/orbit?mode=spectator'
+          }
+
+          // Swap secondary CTA (hero signin)
+          var signinLink = document.querySelector('.hero-signin')
+          if (signinLink) {
+            signinLink.textContent = 'Join the waitlist'
+            signinLink.href = '#login'
+          }
+
+          // Swap nav CTA
+          var navCta = document.querySelector('.nav-cta')
+          if (navCta) {
+            navCta.textContent = 'Explore demo orbits →'
+            navCta.href = '/orbit?mode=spectator'
+          }
+
+          // Swap first-time login card
+          var firstCard = document.querySelector('.login-card:first-child .login-card-cta')
+          if (firstCard) {
+            firstCard.textContent = 'Explore demo orbits'
+            firstCard.href = '/orbit?mode=spectator'
+          }
+          var firstCardLabel = document.querySelector('.login-card:first-child .login-card-label')
+          if (firstCardLabel) firstCardLabel.textContent = 'Browsing only'
+          var firstCardBody = document.querySelector('.login-card:first-child .login-card-body')
+          if (firstCardBody) firstCardBody.textContent = 'ORBIT is at capacity. Browse 10 historical demo orbits while we open more spots.'
+        })
+        .catch(function() {})
+    })()
+
     var emailEl  = document.getElementById('login-email')
     var submitEl = document.getElementById('login-submit')
     var msgEl    = document.getElementById('login-msg')

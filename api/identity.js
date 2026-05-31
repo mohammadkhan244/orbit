@@ -16,7 +16,23 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end()
 
   if (req.method === 'GET') {
-    const { sessionId, action, email } = req.query
+    const { sessionId, action, email, checkCap } = req.query
+
+    if (checkCap === 'true') {
+      try {
+        const keys = await kv.keys('orbit:identity:*')
+        const identities = await Promise.all(keys.map(k => kv.get(k)))
+        const realCount = identities.filter(id => {
+          if (!id) return false
+          const name = (id.name || '').toLowerCase()
+          return !name.includes('test') && !name.includes('mohammad')
+        }).length
+        return res.status(200).json({ mode: realCount >= 10 ? 'spectator' : 'active', count: realCount })
+      } catch (err) {
+        console.error('[identity] checkCap failed', err)
+        return res.status(200).json({ mode: 'active' })
+      }
+    }
 
     if (action === 'lookup') {
       if (!email) return res.status(400).json({ error: 'email required' })

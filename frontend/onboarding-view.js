@@ -287,6 +287,9 @@ function makeOverlay() {
 async function init() {
   injectStyles()
 
+  // Spectator mode: demo orbits only, no identity flow needed
+  if (window.ORBIT_SPECTATOR) return
+
   // Admin mode: use hardcoded identity, skip form
   if (window.ORBIT_ADMIN) {
     const sessionId = 'admin'

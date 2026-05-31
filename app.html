@@ -1218,6 +1218,9 @@
     // Guest mode: ?guest=true limits to 1 search + 1 suggest then captures email
     window.ORBIT_GUEST = new URLSearchParams(location.search).get('guest') === 'true'
 
+    // Spectator mode: ?mode=spectator — read-only demo orbits, no Anthropic API calls
+    window.ORBIT_SPECTATOR = new URLSearchParams(location.search).get('mode') === 'spectator'
+
     // Session gate: resolved by onboarding-view.js when identity is ready
     ;(function() {
       var _res
@@ -1713,6 +1716,77 @@
           tokensSection.appendChild(err)
         })
 
+      // Spectator stats section
+      const spectatorSection = document.createElement('div')
+      spectatorSection.className = 'admin-tokens-section'
+      container.appendChild(spectatorSection)
+      fetch(`/api/admin-auth?action=spectator-stats&code=${encodeURIComponent(code)}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(ss => {
+          if (!ss) return
+
+          const ssEyebrow = document.createElement('div')
+          ssEyebrow.className = 'admin-tokens-eyebrow'
+          ssEyebrow.textContent = 'Spectator Mode'
+          spectatorSection.appendChild(ssEyebrow)
+
+          const ssGrid = document.createElement('div')
+          ssGrid.className = 'admin-tokens-grid'
+          ssGrid.style.gridTemplateColumns = 'repeat(2, 1fr)'
+          ;[
+            { num: ss.spectatorVisits || 0, label: 'Spectator Visits' },
+            { num: ss.waitlist ? ss.waitlist.length : 0, label: 'Waitlist Signups' },
+          ].forEach(item => {
+            const cell = document.createElement('div')
+            cell.className = 'admin-token-cell'
+            const num = document.createElement('span')
+            num.className = 'admin-token-num'
+            num.textContent = item.num
+            const lbl = document.createElement('span')
+            lbl.className = 'admin-token-label'
+            lbl.textContent = item.label
+            cell.appendChild(num)
+            cell.appendChild(lbl)
+            ssGrid.appendChild(cell)
+          })
+          spectatorSection.appendChild(ssGrid)
+
+          if (ss.demoViews && ss.demoViews.length > 0) {
+            const dvEyebrow = document.createElement('div')
+            dvEyebrow.className = 'admin-tokens-eyebrow'
+            dvEyebrow.textContent = 'Demo Orbit Views'
+            spectatorSection.appendChild(dvEyebrow)
+            const dvFeatures = document.createElement('div')
+            dvFeatures.className = 'admin-tokens-features'
+            ss.demoViews.slice(0, 6).forEach(dv => {
+              const chip = document.createElement('div')
+              chip.className = 'admin-feature-chip'
+              chip.innerHTML = `<strong>${dv.views}</strong>${dv.id}`
+              dvFeatures.appendChild(chip)
+            })
+            spectatorSection.appendChild(dvFeatures)
+          }
+
+          if (ss.waitlist && ss.waitlist.length > 0) {
+            const wlEyebrow = document.createElement('div')
+            wlEyebrow.className = 'admin-tokens-eyebrow'
+            wlEyebrow.textContent = 'Waitlist'
+            spectatorSection.appendChild(wlEyebrow)
+            const table = document.createElement('table')
+            table.className = 'admin-tokens-table'
+            table.innerHTML = '<thead><tr><th>Name</th><th>Email</th><th>Date</th></tr></thead>'
+            const tbody = document.createElement('tbody')
+            ss.waitlist.forEach(w => {
+              const tr = document.createElement('tr')
+              tr.innerHTML = `<td>${w.name || '—'}</td><td>${w.email || '—'}</td><td>${w.date ? new Date(w.date).toLocaleDateString() : '—'}</td>`
+              tbody.appendChild(tr)
+            })
+            table.appendChild(tbody)
+            spectatorSection.appendChild(table)
+          }
+        })
+        .catch(() => {})
+
       const layout = document.createElement('div')
       layout.className = 'admin-layout'
 
@@ -2087,6 +2161,7 @@
   <script type="module" src="/frontend/orbit-view.js"></script>
   <script type="module" src="/frontend/search-view.js"></script>
   <script type="module" src="/frontend/suggest-view.js"></script>
+  <script type="module" src="/frontend/spectator-view.js"></script>
 
   <button id="feedback-copy-btn">FEEDBACK</button>
   <script>

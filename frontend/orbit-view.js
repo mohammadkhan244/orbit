@@ -192,6 +192,7 @@ async function flushPending() {
 // ────────────────────────────────────────────────────────────────────────────
 
 async function init() {
+  if (window.ORBIT_SPECTATOR) return
   const container = document.getElementById('orbit-view')
   if (!container) return
 
