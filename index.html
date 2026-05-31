@@ -450,7 +450,7 @@
       <p class="hero-tagline">The ones who'll change your trajectory aren't in your field.</p>
       <div class="hero-ctas">
         <a class="btn-primary" href="/orbit">Build your orbit</a>
-        <a class="hero-signin" href="#login">Returning? Sign in</a>
+        <a class="hero-signin" href="/orbit?mode=spectator">Explore 10 demo orbits</a>
       </div>
     </div>
   </section>
@@ -578,13 +578,6 @@
             primaryCta.href = '/orbit?mode=spectator'
           }
 
-          // Swap secondary CTA (hero signin)
-          var signinLink = document.querySelector('.hero-signin')
-          if (signinLink) {
-            signinLink.textContent = 'Join the waitlist'
-            signinLink.href = '#login'
-          }
-
           // Swap nav CTA
           var navCta = document.querySelector('.nav-cta')
           if (navCta) {
@@ -601,7 +594,7 @@
           var firstCardLabel = document.querySelector('.login-card:first-child .login-card-label')
           if (firstCardLabel) firstCardLabel.textContent = 'Browsing only'
           var firstCardBody = document.querySelector('.login-card:first-child .login-card-body')
-          if (firstCardBody) firstCardBody.textContent = 'ORBIT is at capacity. Browse 10 historical demo orbits while we open more spots.'
+          if (firstCardBody) firstCardBody.textContent = 'ORBIT is at capacity. Browse 10 historical demo orbits, or join the early access list below.'
         })
         .catch(function() {})
     })()

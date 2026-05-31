@@ -25,8 +25,13 @@ export default async function handler(req, res) {
         const realCount = identities.filter(id => {
           if (!id) return false
           const name = (id.name || '').toLowerCase()
-          return !name.includes('test') && !name.includes('mohammad')
+          const email = (id.email || '').toLowerCase()
+          if (!name) return false // incomplete onboarding
+          if (name.includes('test') || name.includes('mohammad')) return false
+          if (email.includes('mohammadkhan') || email.includes('aero34317') || email.includes('test')) return false
+          return true
         }).length
+        console.log('[cap] real user count:', realCount)
         return res.status(200).json({ mode: realCount >= 10 ? 'spectator' : 'active', count: realCount })
       } catch (err) {
         console.error('[identity] checkCap failed', err)

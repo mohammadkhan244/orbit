@@ -25,7 +25,7 @@ function injectStyles() {
     .spec-banner-right {
       display: flex; align-items: center; gap: 12px; flex-shrink: 0;
     }
-    .spec-waitlist-btn {
+    .spec-ea-btn {
       background: none;
       border: 1px solid rgba(184,115,51,0.45);
       color: #b87333;
@@ -36,7 +36,7 @@ function injectStyles() {
       transition: all 0.12s ease;
       white-space: nowrap;
     }
-    .spec-waitlist-btn:hover {
+    .spec-ea-btn:hover {
       background: rgba(184,115,51,0.1);
       border-color: #b87333;
     }
@@ -78,7 +78,7 @@ function injectStyles() {
 
     .spec-canvas-area {
       position: absolute;
-      top: 100px; left: 0; right: 0; bottom: 0;
+      top: 100px; left: 0; right: 0; bottom: 56px;
       overflow: hidden;
     }
 
@@ -97,7 +97,7 @@ function injectStyles() {
     .spec-info-bar {
       position: absolute;
       bottom: 0; left: 0; right: 0;
-      padding: 10px 24px;
+      padding: 8px 24px;
       background: rgba(10,10,10,0.8);
       border-top: 1px solid rgba(184,115,51,0.08);
       display: flex; align-items: baseline; gap: 12px;
@@ -114,6 +114,54 @@ function injectStyles() {
     .spec-info-field {
       font-family: 'DM Sans', sans-serif;
       font-size: 11px; color: rgba(184,115,51,0.55);
+    }
+
+    /* Early access bar — persistent, bottom of orbit-view */
+    .spec-access-bar {
+      position: absolute;
+      bottom: 0; left: 0; right: 0; height: 56px;
+      display: flex; align-items: center;
+      gap: 12px; padding: 0 24px;
+      background: rgba(10,10,10,0.95);
+      border-top: 1px solid rgba(184,115,51,0.14);
+      z-index: 5;
+    }
+    .spec-access-label {
+      font-family: 'Courier Prime', monospace;
+      font-size: 11px; letter-spacing: 0.1em;
+      color: rgba(240,236,228,0.45);
+      text-transform: uppercase;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .spec-access-input {
+      flex: 1; max-width: 260px;
+      background: transparent;
+      border: none; border-bottom: 1px solid rgba(184,115,51,0.3);
+      color: #f0ece4; font-family: 'DM Sans', sans-serif;
+      font-size: 13px; padding: 4px 0;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+    .spec-access-input:focus { border-bottom-color: #b87333; }
+    .spec-access-input::placeholder { color: rgba(240,236,228,0.2); }
+    .spec-access-submit {
+      background: none;
+      border: 1px solid rgba(184,115,51,0.45);
+      color: #b87333;
+      font-family: 'Courier Prime', monospace;
+      font-size: 10px; letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 5px 14px; cursor: pointer;
+      transition: all 0.12s ease; flex-shrink: 0;
+    }
+    .spec-access-submit:hover:not(:disabled) {
+      background: rgba(184,115,51,0.1); border-color: #b87333;
+    }
+    .spec-access-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+    .spec-access-status {
+      font-family: 'Courier Prime', monospace;
+      font-size: 10px; color: rgba(184,115,51,0.65);
+      letter-spacing: 0.08em; white-space: nowrap;
     }
 
     /* Read-only contact cards in spectator panel */
@@ -158,14 +206,7 @@ function injectStyles() {
       font-style: italic; line-height: 1.45;
     }
 
-    /* Force panel open and hide toggle in spectator mode */
-    body.orbit-spectator-mode #orbit-list-toggle { display: none !important; }
-    body.orbit-spectator-mode #orbit-list-panel {
-      transform: translateX(0) !important;
-      visibility: visible !important;
-    }
-
-    /* ── Waitlist modal ── */
+    /* ── Early access modal ── */
     .spec-modal-overlay {
       position: fixed; inset: 0; z-index: 500;
       background: rgba(10,10,10,0.96);
@@ -240,16 +281,26 @@ function injectStyles() {
       .spec-banner { padding: 0 16px; }
       .spec-banner-text { display: none; }
       .spec-selector-row { padding: 0 12px; }
+      .spec-access-label { display: none; }
+      .spec-access-bar { padding: 0 16px; }
     }
   `
   document.head.appendChild(s)
 }
 
-function showWaitlistModal() {
-  if (document.getElementById('spec-waitlist-modal')) return
+async function submitEarlyAccess(email, name) {
+  return fetch('/api/guest-email', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ waitlist: true, name: name || '', email }),
+  })
+}
+
+function showEarlyAccessModal() {
+  if (document.getElementById('spec-ea-modal')) return
 
   const overlay = document.createElement('div')
-  overlay.id = 'spec-waitlist-modal'
+  overlay.id = 'spec-ea-modal'
   overlay.className = 'spec-modal-overlay'
 
   const card = document.createElement('div')
@@ -257,7 +308,7 @@ function showWaitlistModal() {
 
   const eyebrow = document.createElement('div')
   eyebrow.className = 'spec-modal-eyebrow'
-  eyebrow.textContent = 'ORBIT — WAITLIST'
+  eyebrow.textContent = 'ORBIT — EARLY ACCESS'
 
   const heading = document.createElement('div')
   heading.className = 'spec-modal-heading'
@@ -279,7 +330,7 @@ function showWaitlistModal() {
 
   const btn = document.createElement('button')
   btn.className = 'spec-modal-btn'
-  btn.textContent = 'Join the waitlist'
+  btn.textContent = 'Get early access'
 
   const status = document.createElement('div')
   status.className = 'spec-modal-status'
@@ -293,19 +344,15 @@ function showWaitlistModal() {
     const email = emailInput.value.trim()
     if (!email || !email.includes('@')) { emailInput.focus(); return }
     btn.disabled = true
-    btn.textContent = 'Joining…'
+    btn.textContent = 'Submitting…'
     status.textContent = ''
     try {
-      await fetch('/api/guest-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ waitlist: true, name: nameInput.value.trim(), email }),
-      })
-      status.textContent = "You're on the list. We'll be in touch."
-      btn.textContent = 'Joined'
+      await submitEarlyAccess(email, nameInput.value.trim())
+      status.textContent = "You're on the early access list. We'll reach out when your spot opens."
+      btn.textContent = 'Done'
     } catch {
       btn.disabled = false
-      btn.textContent = 'Join the waitlist'
+      btn.textContent = 'Get early access'
       status.textContent = 'Something went wrong. Try again.'
     }
   })
@@ -321,6 +368,53 @@ function showWaitlistModal() {
   overlay.appendChild(card)
   document.body.appendChild(overlay)
   setTimeout(() => emailInput.focus(), 60)
+}
+
+function buildAccessBar() {
+  const bar = document.createElement('div')
+  bar.className = 'spec-access-bar'
+
+  const label = document.createElement('span')
+  label.className = 'spec-access-label'
+  label.textContent = 'Ready to build yours?'
+
+  const input = document.createElement('input')
+  input.type = 'email'
+  input.placeholder = 'your@email.com'
+  input.className = 'spec-access-input'
+
+  const btn = document.createElement('button')
+  btn.className = 'spec-access-submit'
+  btn.textContent = 'Get early access'
+
+  const statusEl = document.createElement('span')
+  statusEl.className = 'spec-access-status'
+
+  btn.addEventListener('click', async () => {
+    const email = input.value.trim()
+    if (!email || !email.includes('@')) { input.focus(); return }
+    btn.disabled = true
+    btn.textContent = 'Submitting…'
+    statusEl.textContent = ''
+    try {
+      await submitEarlyAccess(email)
+      statusEl.textContent = "You're on the early access list. We'll reach out when your spot opens."
+      input.value = ''
+      btn.textContent = 'Done'
+    } catch {
+      btn.disabled = false
+      btn.textContent = 'Get early access'
+      statusEl.textContent = 'Something went wrong. Try again.'
+    }
+  })
+
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') btn.click() })
+
+  bar.appendChild(label)
+  bar.appendChild(input)
+  bar.appendChild(btn)
+  bar.appendChild(statusEl)
+  return bar
 }
 
 function buildContactCard(c) {
@@ -340,7 +434,6 @@ function buildContactCard(c) {
   const nameEl = document.createElement('div')
   nameEl.className = 'spec-contact-name'
   nameEl.textContent = c.name || ''
-
   info.appendChild(nameEl)
 
   if (c.role) {
@@ -373,7 +466,6 @@ async function init() {
   if (!window.ORBIT_SPECTATOR) return
 
   injectStyles()
-  document.body.classList.add('orbit-spectator-mode')
 
   fetch('/api/suggest-prompted-kv', {
     method: 'POST',
@@ -411,17 +503,17 @@ async function init() {
   const bannerRight = document.createElement('div')
   bannerRight.className = 'spec-banner-right'
 
-  const waitlistBtn = document.createElement('button')
-  waitlistBtn.className = 'spec-waitlist-btn'
-  waitlistBtn.textContent = 'Join the waitlist →'
-  waitlistBtn.addEventListener('click', showWaitlistModal)
+  const eaBtn = document.createElement('button')
+  eaBtn.className = 'spec-ea-btn'
+  eaBtn.textContent = 'Get early access →'
+  eaBtn.addEventListener('click', showEarlyAccessModal)
 
-  bannerRight.appendChild(waitlistBtn)
+  bannerRight.appendChild(eaBtn)
   banner.appendChild(bannerText)
   banner.appendChild(bannerRight)
   container.appendChild(banner)
 
-  // Selector row (replaces chip row)
+  // Selector row
   const selectorRow = document.createElement('div')
   selectorRow.className = 'spec-selector-row'
 
@@ -465,20 +557,25 @@ async function init() {
   infoBar.appendChild(infoField)
   canvasArea.appendChild(infoBar)
 
+  // Persistent early access bar at the bottom
+  container.appendChild(buildAccessBar())
+
   const canvas = new OrbitCanvas(canvasArea)
 
-  // Block stage changes and node-selected (panel handles contact display)
+  // Block stage changes (read-only canvas)
   document.addEventListener('orbit:stage-changed', e => e.stopImmediatePropagation(), true)
+  // Block node-selected (contact panel handles display)
   document.addEventListener('orbit:node-selected', e => e.stopImmediatePropagation(), true)
 
   let activeOrbit = null
+  let currentOrbit = null
 
   function loadOrbit(orbit) {
     if (activeOrbit === orbit.id) return
     activeOrbit = orbit.id
+    currentOrbit = orbit
 
     orbitSelect.value = orbit.id
-
     infoName.textContent = orbit.name
     infoEra.textContent = orbit.era
     infoField.textContent = '· ' + orbit.field
@@ -487,7 +584,7 @@ async function init() {
     canvas.mount(orbit.contacts)
     canvas.update(orbit.contacts)
 
-    // Populate read-only contacts panel
+    // Populate read-only contacts panel (if open)
     const panel = document.getElementById('orbit-list-panel')
     const contactsEl = panel?.querySelector('.ol-contacts')
     if (contactsEl) {
@@ -510,10 +607,13 @@ async function init() {
     }
   })
 
-  // Configure orbit-list-panel for spectator (after IIFE has run)
+  // Configure orbit-list-panel for spectator mode (after IIFE has run)
+  // Panel starts collapsed; the existing toggle button lets user open/close it.
   requestAnimationFrame(() => {
     const panel = document.getElementById('orbit-list-panel')
     if (!panel) return
+
+    // Hide interactive controls that don't apply in read-only mode
     const fw = panel.querySelector('.ol-filter-wrap')
     const sr = panel.querySelector('.ol-stage-row')
     const footer = panel.querySelector('.ol-footer')
@@ -526,6 +626,19 @@ async function init() {
     if (ss) ss.style.display = 'none'
     if (exportBtn) exportBtn.style.display = 'none'
     if (headerSpan) headerSpan.textContent = 'DEMO ORBIT'
+
+    // Watch for renderList() calls (triggered when toggle is clicked) and
+    // re-populate with richer spectator cards instead of plain contact rows.
+    const contactsEl = panel.querySelector('.ol-contacts')
+    if (contactsEl) {
+      new MutationObserver(() => {
+        if (contactsEl.querySelector('.spec-contact-card')) return
+        contactsEl.innerHTML = ''
+        if (currentOrbit) {
+          currentOrbit.contacts.forEach(c => contactsEl.appendChild(buildContactCard(c)))
+        }
+      }).observe(contactsEl, { childList: true })
+    }
   })
 
   loadOrbit(DEMO_ORBITS[0])
