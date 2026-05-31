@@ -32,7 +32,13 @@ export default async function handler(req, res) {
           return true
         }).length
         console.log('[cap] real user count:', realCount)
-        return res.status(200).json({ mode: realCount >= 10 ? 'spectator' : 'active', count: realCount })
+        const cap = 10
+        return res.status(200).json({
+          mode: realCount >= cap ? 'spectator' : 'active',
+          count: realCount,
+          seatsRemaining: Math.max(0, cap - realCount),
+          cap,
+        })
       } catch (err) {
         console.error('[identity] checkCap failed', err)
         return res.status(200).json({ mode: 'active' })

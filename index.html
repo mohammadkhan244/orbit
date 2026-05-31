@@ -199,6 +199,22 @@
     }
     .hero-signin:hover { color: #b87333; }
 
+    @keyframes seats-blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.2; }
+    }
+    .seats-pulse {
+      animation: seats-blink 1.2s ease-in-out infinite;
+      display: inline-block;
+    }
+    #hero-seats {
+      font-family: 'Courier Prime', monospace;
+      font-size: 12px; letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin: 10px 0 0; text-align: center;
+      color: rgba(184,115,51,0.6);
+    }
+
     /* ── Pull quote ──────────────────────────────────────────────────────────── */
 
     .pullquote {
@@ -569,7 +585,27 @@
       fetch('/api/identity?checkCap=true')
         .then(function(r) { return r.ok ? r.json() : null })
         .then(function(data) {
-          if (!data || data.mode !== 'spectator') return
+          if (!data) return
+
+          // Show seats remaining below CTAs (active mode only)
+          var seatsLeft = data.seatsRemaining
+          if (typeof seatsLeft === 'number' && seatsLeft > 0) {
+            var heroCtas = document.querySelector('.hero-ctas')
+            if (heroCtas) {
+              var seatsEl = document.createElement('p')
+              seatsEl.id = 'hero-seats'
+              var isUrgent = seatsLeft <= 3
+              if (isUrgent) {
+                seatsEl.style.color = '#b87333'
+                seatsEl.innerHTML = '<span class="seats-pulse">·</span> Only ' + seatsLeft + ' spot' + (seatsLeft === 1 ? '' : 's') + ' left'
+              } else {
+                seatsEl.textContent = seatsLeft + ' spots remaining in early access'
+              }
+              heroCtas.parentNode.insertBefore(seatsEl, heroCtas.nextSibling)
+            }
+          }
+
+          if (data.mode !== 'spectator') return
 
           // Swap primary CTA
           var primaryCta = document.querySelector('.btn-primary')

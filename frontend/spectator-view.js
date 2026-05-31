@@ -277,12 +277,102 @@ function injectStyles() {
     }
     .spec-modal-close:hover { color: rgba(240,236,228,0.6); }
 
-    @media (max-width: 600px) {
-      .spec-banner { padding: 0 16px; }
+    /* ── Read-only contact detail panel ── */
+    .spec-detail-panel {
+      position: absolute;
+      top: 0; right: 0;
+      width: 300px; height: 100%;
+      background: rgba(10,10,10,0.97);
+      border-left: 1px solid rgba(184,115,51,0.18);
+      z-index: 20;
+      overflow-y: auto;
+      padding: 24px 20px;
+      transform: translateX(100%);
+      transition: transform 0.22s ease;
+      box-sizing: border-box;
+    }
+    .spec-detail-panel.open { transform: translateX(0); }
+    .spec-detail-header {
+      display: flex; align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .spec-detail-name {
+      font-family: 'Courier Prime', monospace;
+      font-size: 17px; color: #f0ece4;
+      line-height: 1.3; flex: 1;
+    }
+    .spec-detail-close {
+      background: none; border: none;
+      color: rgba(240,236,228,0.35);
+      font-family: 'Courier Prime', monospace;
+      font-size: 22px; cursor: pointer;
+      padding: 0 0 0 12px; line-height: 1;
+      transition: color 0.15s ease; flex-shrink: 0;
+    }
+    .spec-detail-close:hover { color: #f0ece4; }
+    .spec-detail-role {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px; color: rgba(240,236,228,0.45);
+      margin-bottom: 12px;
+    }
+    .spec-detail-badge {
+      font-family: 'Courier Prime', monospace;
+      font-size: 9px; letter-spacing: 0.12em;
+      color: rgba(184,115,51,0.7);
+      background: rgba(184,115,51,0.06);
+      border: 1px solid rgba(184,115,51,0.18);
+      padding: 3px 8px; text-transform: uppercase;
+      display: inline-block; margin-bottom: 20px;
+    }
+    .spec-detail-why {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px; color: rgba(240,236,228,0.65);
+      font-style: italic; line-height: 1.65;
+      margin-bottom: 16px;
+    }
+    .spec-detail-era {
+      font-family: 'Courier Prime', monospace;
+      font-size: 10px; letter-spacing: 0.14em;
+      color: rgba(240,236,228,0.28);
+      text-transform: uppercase;
+    }
+    .spec-contact-card[data-clickable]:hover {
+      background: rgba(184,115,51,0.04);
+    }
+
+    @media (max-width: 768px) {
+      .spec-banner { padding: 0 16px; height: 36px; }
       .spec-banner-text { display: none; }
-      .spec-selector-row { padding: 0 12px; }
-      .spec-access-label { display: none; }
-      .spec-access-bar { padding: 0 16px; }
+      .spec-selector-row { top: 36px; height: 40px; padding: 0 12px; }
+      .spec-orbit-label { display: none; }
+      .spec-canvas-area { top: 76px; }
+      .spec-access-bar {
+        background: #b87333;
+        border-top: none;
+        padding: 0;
+        height: 48px;
+      }
+      .spec-access-label,
+      .spec-access-input,
+      .spec-access-status { display: none; }
+      .spec-access-submit {
+        flex: 1; width: 100%;
+        background: none; border: none;
+        color: #0a0a0a;
+        font-size: 11px; letter-spacing: 0.18em;
+        padding: 0; height: 100%;
+      }
+      .spec-detail-panel {
+        position: fixed;
+        top: auto; left: 0; right: 0; bottom: 48px;
+        width: 100%; height: auto; max-height: 60vh;
+        border-left: none;
+        border-top: 1px solid rgba(184,115,51,0.25);
+        transform: translateY(100%);
+        overflow-y: auto;
+      }
+      .spec-detail-panel.open { transform: translateY(0); }
     }
   `
   document.head.appendChild(s)
@@ -391,6 +481,7 @@ function buildAccessBar() {
   statusEl.className = 'spec-access-status'
 
   btn.addEventListener('click', async () => {
+    if (window.innerWidth <= 768) { showEarlyAccessModal(); return }
     const email = input.value.trim()
     if (!email || !email.includes('@')) { input.focus(); return }
     btn.disabled = true
@@ -417,9 +508,14 @@ function buildAccessBar() {
   return bar
 }
 
-function buildContactCard(c) {
+function buildContactCard(c, onClick) {
   const card = document.createElement('div')
   card.className = 'spec-contact-card'
+  if (onClick) {
+    card.dataset.clickable = 'true'
+    card.style.cursor = 'pointer'
+    card.addEventListener('click', onClick)
+  }
 
   const top = document.createElement('div')
   top.className = 'spec-contact-top'
@@ -564,11 +660,98 @@ async function init() {
 
   // Block stage changes (read-only canvas)
   document.addEventListener('orbit:stage-changed', e => e.stopImmediatePropagation(), true)
-  // Block node-selected (contact panel handles display)
-  document.addEventListener('orbit:node-selected', e => e.stopImmediatePropagation(), true)
 
   let activeOrbit = null
   let currentOrbit = null
+  let detailPanel = null
+  let outsideListener = null
+
+  function closeContactDetail() {
+    if (outsideListener) {
+      document.removeEventListener('click', outsideListener, true)
+      outsideListener = null
+    }
+    if (detailPanel) {
+      detailPanel.classList.remove('open')
+      const p = detailPanel
+      detailPanel = null
+      setTimeout(() => p.remove(), 220)
+    }
+  }
+
+  function showContactDetail(c) {
+    if (outsideListener) {
+      document.removeEventListener('click', outsideListener, true)
+      outsideListener = null
+    }
+    if (detailPanel) { detailPanel.remove(); detailPanel = null }
+
+    const panel = document.createElement('div')
+    panel.className = 'spec-detail-panel'
+    detailPanel = panel
+
+    const header = document.createElement('div')
+    header.className = 'spec-detail-header'
+
+    const nameEl = document.createElement('div')
+    nameEl.className = 'spec-detail-name'
+    nameEl.textContent = c.name || ''
+
+    const closeBtn = document.createElement('button')
+    closeBtn.className = 'spec-detail-close'
+    closeBtn.textContent = '×'
+    closeBtn.addEventListener('click', e => { e.stopPropagation(); closeContactDetail() })
+
+    header.appendChild(nameEl)
+    header.appendChild(closeBtn)
+    panel.appendChild(header)
+
+    if (c.role) {
+      const roleEl = document.createElement('div')
+      roleEl.className = 'spec-detail-role'
+      roleEl.textContent = c.role
+      panel.appendChild(roleEl)
+    }
+
+    const badge = document.createElement('div')
+    badge.className = 'spec-detail-badge'
+    badge.textContent = (c.status || 'IDENTIFIED').replace(/_/g, ' ')
+    panel.appendChild(badge)
+
+    if (c.why) {
+      const whyEl = document.createElement('div')
+      whyEl.className = 'spec-detail-why'
+      whyEl.textContent = c.why
+      panel.appendChild(whyEl)
+    }
+
+    const era = c.era || currentOrbit?.era
+    if (era) {
+      const eraEl = document.createElement('div')
+      eraEl.className = 'spec-detail-era'
+      eraEl.textContent = era
+      panel.appendChild(eraEl)
+    }
+
+    canvasArea.appendChild(panel)
+    requestAnimationFrame(() => panel.classList.add('open'))
+
+    setTimeout(() => {
+      outsideListener = e => {
+        if (detailPanel && !detailPanel.contains(e.target)) closeContactDetail()
+      }
+      document.addEventListener('click', outsideListener, true)
+    }, 100)
+  }
+
+  // Intercept orbit:node-selected in capture phase — open read-only detail panel
+  document.addEventListener('orbit:node-selected', e => {
+    e.stopImmediatePropagation()
+    const contact = e.detail?.contact
+    if (!contact) return
+    const c = currentOrbit?.contacts?.find(x => x.id === contact.id || x.name === contact.name) || contact
+    showContactDetail(c)
+  }, true)
 
   function loadOrbit(orbit) {
     if (activeOrbit === orbit.id) return
@@ -589,7 +772,7 @@ async function init() {
     const contactsEl = panel?.querySelector('.ol-contacts')
     if (contactsEl) {
       contactsEl.innerHTML = ''
-      orbit.contacts.forEach(c => contactsEl.appendChild(buildContactCard(c)))
+      orbit.contacts.forEach(c => contactsEl.appendChild(buildContactCard(c, () => showContactDetail(c))))
     }
 
     fetch('/api/suggest-prompted-kv', {
@@ -635,7 +818,7 @@ async function init() {
         if (contactsEl.querySelector('.spec-contact-card')) return
         contactsEl.innerHTML = ''
         if (currentOrbit) {
-          currentOrbit.contacts.forEach(c => contactsEl.appendChild(buildContactCard(c)))
+          currentOrbit.contacts.forEach(c => contactsEl.appendChild(buildContactCard(c, () => showContactDetail(c))))
         }
       }).observe(contactsEl, { childList: true })
     }
