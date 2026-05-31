@@ -658,7 +658,7 @@ function fillProfilePanel(panel, orbit) {
 
     const val = document.createElement('div')
     val.className = 'spec-profile-value'
-    val.textContent = value || ''
+    val.textContent = value || '—'
     field.appendChild(val)
 
     panel.appendChild(field)
@@ -790,7 +790,7 @@ async function init() {
     tabProfile.classList.add('active')
     tabOrbit.classList.remove('active')
     canvasArea.style.display = 'none'
-    profilePanel.style.display = ''
+    profilePanel.style.display = 'block'
   })
 
   const canvas = new OrbitCanvas(canvasArea)
