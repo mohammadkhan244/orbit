@@ -109,6 +109,7 @@ function injectStyles() {
       top: 136px; left: 0; right: 0; bottom: 56px;
       overflow-y: auto; padding: 32px 36px;
       box-sizing: border-box; display: none;
+      z-index: 202; background: #0a0a0a;
     }
     .spec-profile-watermark {
       text-align: right;
@@ -622,6 +623,7 @@ function buildContactCard(c, onClick) {
 }
 
 function fillProfilePanel(panel, orbit) {
+  console.log('[spectator] fillProfilePanel:', orbit.name, '| mission:', orbit.gravityProfile?.mission?.slice(0, 60))
   panel.innerHTML = ''
   const p = orbit.gravityProfile || {}
 
@@ -675,6 +677,12 @@ async function init() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action: 'visit' }),
   }).catch(() => {})
+
+  // Neutralize active user gravity profile — must never appear in spectator mode
+  window.showGravityProfile = () => {}
+  document.getElementById('gravity-profile-modal')?.remove()
+  const gpMobileBtn = document.getElementById('nav-gp-btn-mobile')
+  if (gpMobileBtn) gpMobileBtn.style.display = 'none'
 
   // Hide nav links that would trigger APIs
   const hideViews = ['search', 'suggest', 'aperture', 'admin']
