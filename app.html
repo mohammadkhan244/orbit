@@ -118,7 +118,7 @@
       display: block;
     }
 
-    #orbit-view  { /* canvas fills this */ }
+    #orbit-view  { position: relative; overflow: hidden; /* canvas fills this */ }
     #search-view { padding: 40px 32px; }
     #suggest-view { padding: 40px 32px; }
 
@@ -686,8 +686,62 @@
     }
 
     /* ── ADMIN VIEW ── */
-    #admin-view { padding: 0; overflow: hidden; }
-    #admin-view.active { display: flex; flex-direction: column; }
+    #admin-view { padding: 0; overflow-y: auto; }
+    #admin-view.active { display: block; }
+
+    .admin-section {
+      border: 1px solid rgba(184,115,51,0.18);
+      padding: 24px;
+      margin: 24px auto;
+      max-width: 1200px;
+    }
+    .admin-section-header {
+      font-family: 'Courier Prime', monospace;
+      font-size: 10px; letter-spacing: 0.28em;
+      color: #b87333; text-transform: uppercase;
+      margin-bottom: 20px; padding-bottom: 12px;
+      border-bottom: 1px solid rgba(184,115,51,0.1);
+    }
+    .admin-overview-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: rgba(184,115,51,0.08);
+      border: 1px solid rgba(184,115,51,0.08);
+    }
+    .admin-table-wrap { overflow-y: auto; }
+    .admin-table { width: 100%; border-collapse: collapse; }
+    .admin-table th {
+      font-family: 'Courier Prime', monospace;
+      font-size: 8px; letter-spacing: 0.16em;
+      color: rgba(184,115,51,0.55); text-transform: uppercase;
+      text-align: left; padding: 8px 10px;
+      border-bottom: 1px solid rgba(184,115,51,0.1);
+      position: sticky; top: 0; background: #0a0a0a; z-index: 1;
+    }
+    .admin-table td {
+      font-family: 'Courier Prime', monospace;
+      font-size: 12px; color: rgba(240,236,228,0.65);
+      padding: 10px; border-bottom: 1px solid rgba(184,115,51,0.05);
+    }
+    .admin-table td:first-child { color: #b87333; }
+    .admin-profile-card {
+      border: 1px solid rgba(184,115,51,0.12);
+      padding: 18px 20px; margin-bottom: 12px;
+      cursor: pointer; transition: background 0.12s ease, border-color 0.12s ease;
+    }
+    .admin-profile-card:hover { background: rgba(184,115,51,0.04); border-color: rgba(184,115,51,0.28); }
+    .admin-profile-card.expanded { border-color: rgba(184,115,51,0.4); }
+    .admin-profile-card-header { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+    .admin-profile-card-name { font-family: 'Courier Prime', monospace; font-size: 15px; color: #f0ece4; }
+    .admin-profile-card-meta { font-family: 'DM Sans', sans-serif; font-size: 12px; color: rgba(240,236,228,0.35); }
+    .admin-profile-card-mission {
+      font-family: 'DM Sans', sans-serif; font-size: 12px;
+      color: rgba(240,236,228,0.45); margin-top: 6px;
+      line-height: 1.4;
+    }
+    .admin-profile-card-detail { padding-top: 20px; display: none; }
+    .admin-profile-card.expanded .admin-profile-card-detail { display: block; }
 
     /* ── STAGE DROPDOWN ── */
     .panel-stage-select {
@@ -1596,55 +1650,62 @@
       adminLoaded = true
       const container = document.getElementById('admin-view')
       container.innerHTML = ''
-
-      // Stats bar
-      const statsBar = document.createElement('div')
-      statsBar.className = 'admin-stats-bar'
-      container.appendChild(statsBar)
       const code = sessionStorage.getItem('orbit_admin_code') || ''
+
+      function makeSection(title) {
+        const sec = document.createElement('div')
+        sec.className = 'admin-section'
+        const hdr = document.createElement('div')
+        hdr.className = 'admin-section-header'
+        hdr.textContent = title
+        sec.appendChild(hdr)
+        return sec
+      }
+
+      // ── 1. OVERVIEW STATS ────────────────────────────────────────────────────
+      const sec1 = makeSection('OVERVIEW STATS')
+      const overviewGrid = document.createElement('div')
+      overviewGrid.className = 'admin-overview-grid'
+      sec1.appendChild(overviewGrid)
+      container.appendChild(sec1)
+
       fetch(`/api/admin-auth?action=stats&code=${encodeURIComponent(code)}`)
         .then(r => r.ok ? r.json() : null)
         .then(stats => {
           if (!stats) return
-          const items = [
+          ;[
             { num: stats.orbitsBuilt,    label: 'Orbits Built' },
+            { num: stats.contactsAdded,  label: 'Contacts Added' },
             { num: stats.searches,       label: 'Searches' },
             { num: stats.suggests,       label: 'Suggests' },
-            { num: stats.contactsAdded,  label: 'Contacts' },
             { num: stats.guests,         label: 'Guests' },
-            { num: `${stats.apertureUpvotes}/${stats.apertureDownvotes}`, label: 'Aperture' },
-          ]
-          items.forEach(item => {
-            const el = document.createElement('div')
-            el.className = 'admin-stat-item'
+            { num: `${stats.apertureUpvotes}↑ ${stats.apertureDownvotes}↓`, label: 'Aperture Votes' },
+          ].forEach(item => {
+            const cell = document.createElement('div')
+            cell.className = 'admin-stat-item'
             const num = document.createElement('span')
             num.className = 'admin-stat-num'
             num.textContent = item.num
-            const label = document.createElement('span')
-            label.className = 'admin-stat-label'
-            label.textContent = item.label
-            el.appendChild(num)
-            el.appendChild(label)
-            statsBar.appendChild(el)
+            const lbl = document.createElement('span')
+            lbl.className = 'admin-stat-label'
+            lbl.textContent = item.label
+            cell.appendChild(num)
+            cell.appendChild(lbl)
+            overviewGrid.appendChild(cell)
           })
         })
-        .catch(() => { statsBar.remove() })
+        .catch(() => { sec1.remove() })
 
-      // Token usage section
-      const tokensSection = document.createElement('div')
-      tokensSection.className = 'admin-tokens-section'
-      container.appendChild(tokensSection)
+      // ── 2. TOKEN USAGE ───────────────────────────────────────────────────────
+      const sec2 = makeSection('TOKEN USAGE')
+      container.appendChild(sec2)
+
       fetch(`/api/admin-auth?action=tokens&code=${encodeURIComponent(code)}`)
         .then(r => r.ok ? r.json() : null)
         .then(t => {
           if (!t) return
           const totalTokens = (t.totalInput || 0) + (t.totalOutput || 0)
           const estCost = ((t.totalInput || 0) * 0.000003 + (t.totalOutput || 0) * 0.000015).toFixed(4)
-
-          const eyebrow = document.createElement('div')
-          eyebrow.className = 'admin-tokens-eyebrow'
-          eyebrow.textContent = 'Token Usage — All Time'
-          tokensSection.appendChild(eyebrow)
 
           const grid = document.createElement('div')
           grid.className = 'admin-tokens-grid'
@@ -1666,13 +1727,14 @@
             cell.appendChild(lbl)
             grid.appendChild(cell)
           })
-          tokensSection.appendChild(grid)
+          sec2.appendChild(grid)
 
           const features = document.createElement('div')
           features.className = 'admin-tokens-features'
+          features.style.marginTop = '20px'
           ;[
-            { label: 'Search',        tokens: t.searchTokens,      count: t.searchCount },
-            { label: 'Suggest',       tokens: t.suggestTokens,     count: t.suggestCount },
+            { label: 'Search',        tokens: t.searchTokens,       count: t.searchCount },
+            { label: 'Suggest',       tokens: t.suggestTokens,      count: t.suggestCount },
             { label: 'Suggest-Orbit', tokens: t.suggestOrbitTokens, count: t.suggestOrbitCount },
           ].forEach(f => {
             const chip = document.createElement('div')
@@ -1680,20 +1742,23 @@
             chip.innerHTML = `<strong>${(f.tokens || 0).toLocaleString()} tokens</strong>${f.label} — ${f.count || 0} calls`
             features.appendChild(chip)
           })
-          tokensSection.appendChild(features)
+          sec2.appendChild(features)
 
-          // Per-user table
-          const tableEyebrow = document.createElement('div')
-          tableEyebrow.className = 'admin-tokens-eyebrow'
-          tableEyebrow.textContent = 'Per-User Usage'
-          tokensSection.appendChild(tableEyebrow)
+          const perUserLabel = document.createElement('div')
+          perUserLabel.className = 'admin-tokens-eyebrow'
+          perUserLabel.style.marginTop = '24px'
+          perUserLabel.textContent = 'Per-User Usage'
+          sec2.appendChild(perUserLabel)
 
           if (!t.users || t.users.length === 0) {
             const empty = document.createElement('div')
             empty.className = 'admin-tokens-empty'
             empty.textContent = 'No token data recorded yet.'
-            tokensSection.appendChild(empty)
+            sec2.appendChild(empty)
           } else {
+            const wrap = document.createElement('div')
+            wrap.className = 'admin-table-wrap'
+            wrap.style.maxHeight = '300px'
             const table = document.createElement('table')
             table.className = 'admin-tokens-table'
             table.innerHTML = '<thead><tr><th>Session</th><th>Searches</th><th>Suggests</th><th>Suggest-Orbit</th><th>Total Tokens</th><th>Est. Cost</th></tr></thead>'
@@ -1706,74 +1771,84 @@
               tbody.appendChild(tr)
             })
             table.appendChild(tbody)
-            tokensSection.appendChild(table)
+            wrap.appendChild(table)
+            sec2.appendChild(wrap)
           }
         })
         .catch(() => {
           const err = document.createElement('div')
           err.className = 'admin-tokens-empty'
           err.textContent = 'Token data unavailable.'
-          tokensSection.appendChild(err)
+          sec2.appendChild(err)
         })
 
-      // Spectator stats section
-      const spectatorSection = document.createElement('div')
-      spectatorSection.className = 'admin-tokens-section'
-      container.appendChild(spectatorSection)
+      // ── 3. ACTIVE USERS ──────────────────────────────────────────────────────
+      const sec3 = makeSection('ACTIVE USERS')
+      const usersWrap = document.createElement('div')
+      usersWrap.className = 'admin-table-wrap'
+      usersWrap.style.maxHeight = '400px'
+      sec3.appendChild(usersWrap)
+      container.appendChild(sec3)
+
+      // ── 4. WAITLIST ──────────────────────────────────────────────────────────
+      const sec4 = makeSection('WAITLIST')
+      container.appendChild(sec4)
+
+      // ── 5. SPECTATOR ACTIVITY ────────────────────────────────────────────────
+      const sec5 = makeSection('SPECTATOR ACTIVITY')
+      container.appendChild(sec5)
+
       fetch(`/api/admin-auth?action=spectator-stats&code=${encodeURIComponent(code)}`)
         .then(r => r.ok ? r.json() : null)
         .then(ss => {
           if (!ss) return
 
-          const ssEyebrow = document.createElement('div')
-          ssEyebrow.className = 'admin-tokens-eyebrow'
-          ssEyebrow.textContent = 'Spectator Mode'
-          spectatorSection.appendChild(ssEyebrow)
-
-          const ssGrid = document.createElement('div')
-          ssGrid.className = 'admin-tokens-grid'
-          ssGrid.style.gridTemplateColumns = 'repeat(2, 1fr)'
-          ;[
-            { num: ss.spectatorVisits || 0, label: 'Spectator Visits' },
-            { num: ss.waitlist ? ss.waitlist.length : 0, label: 'Waitlist Signups' },
-          ].forEach(item => {
-            const cell = document.createElement('div')
-            cell.className = 'admin-token-cell'
-            const num = document.createElement('span')
-            num.className = 'admin-token-num'
-            num.textContent = item.num
-            const lbl = document.createElement('span')
-            lbl.className = 'admin-token-label'
-            lbl.textContent = item.label
-            cell.appendChild(num)
-            cell.appendChild(lbl)
-            ssGrid.appendChild(cell)
-          })
-          spectatorSection.appendChild(ssGrid)
+          const visitsEl = document.createElement('div')
+          visitsEl.style.cssText = 'font-family:"Courier Prime",monospace;font-size:22px;font-weight:700;color:#b87333;margin-bottom:6px;'
+          visitsEl.textContent = ss.spectatorVisits || 0
+          const visitsLabel = document.createElement('div')
+          visitsLabel.style.cssText = 'font-family:"Courier Prime",monospace;font-size:9px;letter-spacing:0.16em;color:rgba(240,236,228,0.3);text-transform:uppercase;margin-bottom:24px;'
+          visitsLabel.textContent = 'Total Spectator Visits'
+          sec5.appendChild(visitsEl)
+          sec5.appendChild(visitsLabel)
 
           if (ss.demoViews && ss.demoViews.length > 0) {
-            const dvEyebrow = document.createElement('div')
-            dvEyebrow.className = 'admin-tokens-eyebrow'
-            dvEyebrow.textContent = 'Demo Orbit Views'
-            spectatorSection.appendChild(dvEyebrow)
+            const dvLabel = document.createElement('div')
+            dvLabel.className = 'admin-tokens-eyebrow'
+            dvLabel.textContent = 'Demo Orbit Views (ranked)'
+            sec5.appendChild(dvLabel)
             const dvFeatures = document.createElement('div')
             dvFeatures.className = 'admin-tokens-features'
-            ss.demoViews.slice(0, 6).forEach(dv => {
+            ss.demoViews.forEach(dv => {
               const chip = document.createElement('div')
               chip.className = 'admin-feature-chip'
               chip.innerHTML = `<strong>${dv.views}</strong>${dv.id}`
               dvFeatures.appendChild(chip)
             })
-            spectatorSection.appendChild(dvFeatures)
+            sec5.appendChild(dvFeatures)
+          } else {
+            const empty = document.createElement('div')
+            empty.className = 'admin-tokens-empty'
+            empty.textContent = 'No demo orbit views yet.'
+            sec5.appendChild(empty)
           }
 
+          // Populate waitlist section (sec4) here since we have the data
+          const wlCount = document.createElement('div')
+          wlCount.style.cssText = 'font-family:"Courier Prime",monospace;font-size:22px;font-weight:700;color:#b87333;margin-bottom:6px;'
+          wlCount.textContent = ss.waitlist ? ss.waitlist.length : 0
+          const wlCountLabel = document.createElement('div')
+          wlCountLabel.style.cssText = 'font-family:"Courier Prime",monospace;font-size:9px;letter-spacing:0.16em;color:rgba(240,236,228,0.3);text-transform:uppercase;margin-bottom:24px;'
+          wlCountLabel.textContent = `Waitlist Signup${ss.waitlist && ss.waitlist.length === 1 ? '' : 's'}`
+          sec4.appendChild(wlCount)
+          sec4.appendChild(wlCountLabel)
+
           if (ss.waitlist && ss.waitlist.length > 0) {
-            const wlEyebrow = document.createElement('div')
-            wlEyebrow.className = 'admin-tokens-eyebrow'
-            wlEyebrow.textContent = 'Waitlist'
-            spectatorSection.appendChild(wlEyebrow)
+            const wlWrap = document.createElement('div')
+            wlWrap.className = 'admin-table-wrap'
+            wlWrap.style.maxHeight = '300px'
             const table = document.createElement('table')
-            table.className = 'admin-tokens-table'
+            table.className = 'admin-table'
             table.innerHTML = '<thead><tr><th>Name</th><th>Email</th><th>Date</th></tr></thead>'
             const tbody = document.createElement('tbody')
             ss.waitlist.forEach(w => {
@@ -1782,84 +1857,107 @@
               tbody.appendChild(tr)
             })
             table.appendChild(tbody)
-            spectatorSection.appendChild(table)
+            wlWrap.appendChild(table)
+            sec4.appendChild(wlWrap)
+          } else {
+            const empty = document.createElement('div')
+            empty.className = 'admin-tokens-empty'
+            empty.textContent = 'No waitlist signups yet.'
+            sec4.appendChild(empty)
           }
         })
-        .catch(() => {})
+        .catch(() => {
+          sec4.appendChild(Object.assign(document.createElement('div'), { className: 'admin-tokens-empty', textContent: 'Waitlist data unavailable.' }))
+          sec5.appendChild(Object.assign(document.createElement('div'), { className: 'admin-tokens-empty', textContent: 'Spectator data unavailable.' }))
+        })
 
-      const layout = document.createElement('div')
-      layout.className = 'admin-layout'
+      // ── 6. ALL GRAVITY PROFILES ──────────────────────────────────────────────
+      const sec6 = makeSection('ALL GRAVITY PROFILES')
+      container.appendChild(sec6)
 
-      const leftEl = document.createElement('div')
-      leftEl.className = 'admin-left'
-
-      const eyebrow = document.createElement('div')
-      eyebrow.className = 'admin-eyebrow'
-      eyebrow.textContent = 'ORBIT — ADMIN'
-
-      const statusEl = document.createElement('div')
-      statusEl.className = 'admin-status'
-      statusEl.textContent = 'Loading…'
-
-      leftEl.appendChild(eyebrow)
-      leftEl.appendChild(statusEl)
-
-      const rightEl = document.createElement('div')
-      rightEl.className = 'admin-right'
-
-      const emptyEl = document.createElement('div')
-      emptyEl.className = 'admin-empty'
-      emptyEl.textContent = 'Select a profile.'
-      rightEl.appendChild(emptyEl)
-
-      layout.appendChild(leftEl)
-      layout.appendChild(rightEl)
-      container.appendChild(layout)
+      const profilesLoadingEl = document.createElement('div')
+      profilesLoadingEl.className = 'admin-tokens-empty'
+      profilesLoadingEl.textContent = 'Loading profiles…'
+      sec3.insertBefore(profilesLoadingEl, usersWrap)
 
       try {
         const r = await fetch(`/api/admin-auth?action=list&code=${encodeURIComponent(code)}`)
         if (!r.ok) throw new Error('Unauthorized')
         const { profiles } = await r.json()
-        statusEl.remove()
+        profilesLoadingEl.remove()
 
-        const countEl = document.createElement('div')
-        countEl.className = 'admin-count'
-        countEl.textContent = `${profiles.length} gravity profile${profiles.length === 1 ? '' : 's'}`
-        leftEl.appendChild(countEl)
+        // Section 3: Active Users table
+        const usersTable = document.createElement('table')
+        usersTable.className = 'admin-table'
+        usersTable.innerHTML = '<thead><tr><th>Session</th><th>Name</th><th>Email</th><th>Mission</th><th>Joined</th></tr></thead>'
+        const usersTbody = document.createElement('tbody')
+        profiles.forEach(p => {
+          const tr = document.createElement('tr')
+          const missionText = p.mission ? (p.mission.length > 40 ? p.mission.slice(0, 40) + '…' : p.mission) : '—'
+          const joined = p.created_at ? new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
+          tr.innerHTML = `<td>${(p.sessionId || '').slice(0, 8)}</td><td>${p.name || '—'}</td><td>${p.email || '—'}</td><td style="color:rgba(240,236,228,0.5)">${missionText}</td><td>${joined}</td>`
+          usersTbody.appendChild(tr)
+        })
+        usersTable.appendChild(usersTbody)
+        usersWrap.appendChild(usersTable)
+
+        // Section 6: Profile cards
+        const profileCount = document.createElement('div')
+        profileCount.className = 'admin-count'
+        profileCount.textContent = `${profiles.length} gravity profile${profiles.length === 1 ? '' : 's'}`
+        sec6.appendChild(profileCount)
 
         profiles.forEach(p => {
-          const row = document.createElement('div')
-          row.className = 'admin-row' + (p.sessionId === 'admin' ? ' admin-self' : '')
+          const card = document.createElement('div')
+          card.className = 'admin-profile-card'
 
-          const nameEl = document.createElement('div')
-          nameEl.className = 'admin-row-name'
-          nameEl.textContent = p.name || '—'
+          const cardHeader = document.createElement('div')
+          cardHeader.className = 'admin-profile-card-header'
+
+          const cardName = document.createElement('div')
+          cardName.className = 'admin-profile-card-name'
+          cardName.textContent = p.name || '—'
+
+          cardHeader.appendChild(cardName)
 
           const metaParts = []
           if (p.email) metaParts.push(p.email)
           if (p.created_at) metaParts.push(new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }))
-          const metaEl = document.createElement('div')
-          metaEl.className = 'admin-row-meta'
-          metaEl.textContent = metaParts.join(' · ')
-
-          row.appendChild(nameEl)
-          if (metaParts.length) row.appendChild(metaEl)
-          if (p.mission) {
-            const missionEl = document.createElement('div')
-            missionEl.className = 'admin-row-mission'
-            missionEl.textContent = p.mission.length > 60 ? p.mission.slice(0, 60) + '…' : p.mission
-            row.appendChild(missionEl)
+          if (metaParts.length) {
+            const cardMeta = document.createElement('div')
+            cardMeta.className = 'admin-profile-card-meta'
+            cardMeta.textContent = metaParts.join(' · ')
+            cardHeader.appendChild(cardMeta)
           }
 
-          row.addEventListener('click', () => {
-            document.querySelectorAll('.admin-row').forEach(r => r.classList.remove('selected'))
-            row.classList.add('selected')
-            loadAdminProfile(p.sessionId, rightEl)
+          card.appendChild(cardHeader)
+
+          if (p.mission) {
+            const cardMission = document.createElement('div')
+            cardMission.className = 'admin-profile-card-mission'
+            cardMission.textContent = p.mission.length > 120 ? p.mission.slice(0, 120) + '…' : p.mission
+            card.appendChild(cardMission)
+          }
+
+          const cardDetail = document.createElement('div')
+          cardDetail.className = 'admin-profile-card-detail'
+          cardDetail.textContent = 'Loading…'
+          card.appendChild(cardDetail)
+
+          let detailLoaded = false
+          card.addEventListener('click', () => {
+            const isExpanded = card.classList.toggle('expanded')
+            if (isExpanded && !detailLoaded) {
+              detailLoaded = true
+              loadAdminProfile(p.sessionId, cardDetail)
+            }
           })
-          leftEl.appendChild(row)
+
+          sec6.appendChild(card)
         })
       } catch {
-        statusEl.textContent = 'Failed to load profiles.'
+        profilesLoadingEl.textContent = 'Failed to load profiles.'
+        sec6.appendChild(Object.assign(document.createElement('div'), { className: 'admin-tokens-empty', textContent: 'Failed to load profiles.' }))
       }
     }
 

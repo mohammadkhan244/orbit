@@ -41,59 +41,40 @@ function injectStyles() {
       border-color: #b87333;
     }
 
-    .spec-chip-row {
+    .spec-selector-row {
       position: absolute;
       left: 0; right: 0;
       top: 48px;
       height: 52px;
       display: flex; align-items: center;
-      gap: 8px;
+      gap: 14px;
       padding: 0 20px;
-      overflow-x: auto;
-      overflow-y: hidden;
       border-bottom: 1px solid rgba(184,115,51,0.08);
       background: rgba(10,10,10,0.5);
       z-index: 4;
-      flex-shrink: 0;
-      scrollbar-width: none;
-      -ms-overflow-style: none;
     }
-    .spec-chip-row::-webkit-scrollbar { display: none; }
-
-    .spec-chip {
-      display: flex; align-items: center; gap: 7px;
-      padding: 5px 12px;
-      border: 1px solid rgba(184,115,51,0.18);
-      background: transparent;
-      cursor: pointer;
-      transition: all 0.12s ease;
-      flex-shrink: 0;
-      white-space: nowrap;
-    }
-    .spec-chip:hover {
-      background: rgba(184,115,51,0.07);
-      border-color: rgba(184,115,51,0.4);
-    }
-    .spec-chip.active {
-      background: rgba(184,115,51,0.12);
-      border-color: #b87333;
-    }
-    .spec-chip-initials {
+    .spec-orbit-label {
       font-family: 'Courier Prime', monospace;
-      font-size: 10px; font-weight: 700;
-      color: #b87333;
-      width: 18px; text-align: center;
+      font-size: 9px; letter-spacing: 0.22em;
+      color: rgba(184,115,51,0.55);
+      text-transform: uppercase;
+      white-space: nowrap; flex-shrink: 0;
     }
-    .spec-chip-name {
+    .spec-orbit-select {
+      flex: 1;
+      background: #0a0a0a;
+      border: 1px solid rgba(184,115,51,0.35);
+      color: #f0ece4;
       font-family: 'Courier Prime', monospace;
-      font-size: 10px; letter-spacing: 0.08em;
-      color: rgba(240,236,228,0.75);
+      font-size: 12px; letter-spacing: 0.04em;
+      padding: 6px 10px;
+      cursor: pointer; outline: none;
+      -webkit-appearance: none; appearance: none;
+      max-width: 500px;
     }
-    .spec-chip-field {
-      font-family: 'DM Sans', sans-serif;
-      font-size: 10px;
-      color: rgba(240,236,228,0.32);
-    }
+    .spec-orbit-select:hover,
+    .spec-orbit-select:focus { border-color: #b87333; }
+    .spec-orbit-select option { background: #0a0a0a; color: #f0ece4; }
 
     .spec-canvas-area {
       position: absolute;
@@ -109,10 +90,8 @@ function injectStyles() {
       font-size: 11px; letter-spacing: 0.32em;
       color: rgba(184,115,51,0.15);
       text-transform: uppercase;
-      pointer-events: none;
-      user-select: none;
-      white-space: nowrap;
-      z-index: 2;
+      pointer-events: none; user-select: none;
+      white-space: nowrap; z-index: 2;
     }
 
     .spec-info-bar {
@@ -137,6 +116,55 @@ function injectStyles() {
       font-size: 11px; color: rgba(184,115,51,0.55);
     }
 
+    /* Read-only contact cards in spectator panel */
+    .spec-contact-card {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(184,115,51,0.06);
+    }
+    .spec-contact-top {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 6px;
+    }
+    .spec-contact-avatar {
+      width: 28px; height: 28px; flex-shrink: 0;
+      border: 1px solid rgba(184,115,51,0.35);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Courier Prime', monospace;
+      font-size: 9px; font-weight: 700; color: #b87333;
+    }
+    .spec-contact-info { flex: 1; min-width: 0; }
+    .spec-contact-name {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px; color: #f0ece4;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .spec-contact-role {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px; color: rgba(240,236,228,0.4);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .spec-contact-badge {
+      font-family: 'Courier Prime', monospace;
+      font-size: 8px; letter-spacing: 0.1em;
+      color: rgba(184,115,51,0.65);
+      background: rgba(184,115,51,0.06);
+      border: 1px solid rgba(184,115,51,0.14);
+      padding: 2px 6px; text-transform: uppercase;
+      flex-shrink: 0; white-space: nowrap;
+    }
+    .spec-contact-why {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px; color: rgba(240,236,228,0.45);
+      font-style: italic; line-height: 1.45;
+    }
+
+    /* Force panel open and hide toggle in spectator mode */
+    body.orbit-spectator-mode #orbit-list-toggle { display: none !important; }
+    body.orbit-spectator-mode #orbit-list-panel {
+      transform: translateX(0) !important;
+      visibility: visible !important;
+    }
+
     /* ── Waitlist modal ── */
     .spec-modal-overlay {
       position: fixed; inset: 0; z-index: 500;
@@ -154,14 +182,12 @@ function injectStyles() {
       font-family: 'Courier Prime', monospace;
       font-size: 10px; letter-spacing: 0.22em;
       color: rgba(184,115,51,0.55);
-      text-transform: uppercase;
-      margin-bottom: 20px;
+      text-transform: uppercase; margin-bottom: 20px;
     }
     .spec-modal-heading {
       font-family: 'Courier Prime', monospace;
       font-size: 20px; font-weight: 400;
-      color: #f0ece4; line-height: 1.3;
-      margin-bottom: 12px;
+      color: #f0ece4; line-height: 1.3; margin-bottom: 12px;
     }
     .spec-modal-sub {
       font-family: 'DM Sans', sans-serif;
@@ -213,7 +239,7 @@ function injectStyles() {
     @media (max-width: 600px) {
       .spec-banner { padding: 0 16px; }
       .spec-banner-text { display: none; }
-      .spec-chip-row { padding: 0 12px; }
+      .spec-selector-row { padding: 0 12px; }
     }
   `
   document.head.appendChild(s)
@@ -297,12 +323,58 @@ function showWaitlistModal() {
   setTimeout(() => emailInput.focus(), 60)
 }
 
+function buildContactCard(c) {
+  const card = document.createElement('div')
+  card.className = 'spec-contact-card'
+
+  const top = document.createElement('div')
+  top.className = 'spec-contact-top'
+
+  const avatar = document.createElement('div')
+  avatar.className = 'spec-contact-avatar'
+  avatar.textContent = (c.name || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+
+  const info = document.createElement('div')
+  info.className = 'spec-contact-info'
+
+  const nameEl = document.createElement('div')
+  nameEl.className = 'spec-contact-name'
+  nameEl.textContent = c.name || ''
+
+  info.appendChild(nameEl)
+
+  if (c.role) {
+    const roleEl = document.createElement('div')
+    roleEl.className = 'spec-contact-role'
+    roleEl.textContent = c.role
+    info.appendChild(roleEl)
+  }
+
+  const badge = document.createElement('div')
+  badge.className = 'spec-contact-badge'
+  badge.textContent = (c.status || 'IDENTIFIED').replace(/_/g, ' ')
+
+  top.appendChild(avatar)
+  top.appendChild(info)
+  top.appendChild(badge)
+  card.appendChild(top)
+
+  if (c.why) {
+    const why = document.createElement('div')
+    why.className = 'spec-contact-why'
+    why.textContent = c.why
+    card.appendChild(why)
+  }
+
+  return card
+}
+
 async function init() {
   if (!window.ORBIT_SPECTATOR) return
 
   injectStyles()
+  document.body.classList.add('orbit-spectator-mode')
 
-  // Fire-and-forget visit counter
   fetch('/api/suggest-prompted-kv', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -316,11 +388,9 @@ async function init() {
       el.style.display = 'none'
     })
   })
-  // Hide gravity profile button
   const gpLink = document.getElementById('gravity-profile-link')
   if (gpLink) gpLink.style.display = 'none'
 
-  // Show spectator badge in place of admin badge
   const adminBadge = document.getElementById('admin-badge')
   if (adminBadge) {
     adminBadge.textContent = 'DEMO'
@@ -351,27 +421,39 @@ async function init() {
   banner.appendChild(bannerRight)
   container.appendChild(banner)
 
-  // Chip row
-  const chipRow = document.createElement('div')
-  chipRow.className = 'spec-chip-row'
-  container.appendChild(chipRow)
+  // Selector row (replaces chip row)
+  const selectorRow = document.createElement('div')
+  selectorRow.className = 'spec-selector-row'
+
+  const selectorLabel = document.createElement('label')
+  selectorLabel.className = 'spec-orbit-label'
+  selectorLabel.textContent = 'VIEWING ORBIT OF'
+
+  const orbitSelect = document.createElement('select')
+  orbitSelect.className = 'spec-orbit-select'
+  DEMO_ORBITS.forEach(orbit => {
+    const opt = document.createElement('option')
+    opt.value = orbit.id
+    opt.textContent = `${orbit.name} — ${orbit.field}`
+    orbitSelect.appendChild(opt)
+  })
+
+  selectorRow.appendChild(selectorLabel)
+  selectorRow.appendChild(orbitSelect)
+  container.appendChild(selectorRow)
 
   // Canvas area
   const canvasArea = document.createElement('div')
   canvasArea.className = 'spec-canvas-area'
   container.appendChild(canvasArea)
 
-  // Watermark
   const watermark = document.createElement('div')
   watermark.className = 'spec-watermark'
   watermark.textContent = 'DEMO ORBIT — READ ONLY'
   canvasArea.appendChild(watermark)
 
-  // Info bar
   const infoBar = document.createElement('div')
   infoBar.className = 'spec-info-bar'
-  canvasArea.appendChild(infoBar)
-
   const infoName = document.createElement('span')
   infoName.className = 'spec-info-name'
   const infoEra = document.createElement('span')
@@ -381,34 +463,13 @@ async function init() {
   infoBar.appendChild(infoName)
   infoBar.appendChild(infoEra)
   infoBar.appendChild(infoField)
+  canvasArea.appendChild(infoBar)
 
-  // Canvas instance (read-only — no side panel, no stage changes)
   const canvas = new OrbitCanvas(canvasArea)
-  // Disable drag/drop stage changes by overriding the event that OrbitCanvas dispatches
+
+  // Block stage changes and node-selected (panel handles contact display)
   document.addEventListener('orbit:stage-changed', e => e.stopImmediatePropagation(), true)
-  // Intercept node-selected to show read-only tooltip instead of panel
-  document.addEventListener('orbit:node-selected', e => {
-    const c = e.detail
-    const tip = document.getElementById('spec-node-tip')
-    if (tip) tip.remove()
-    const el = document.createElement('div')
-    el.id = 'spec-node-tip'
-    el.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(10,10,10,0.95);border:1px solid rgba(184,115,51,0.25);padding:14px 20px;max-width:320px;width:90%;z-index:20;pointer-events:none;'
-    const n = document.createElement('div')
-    n.style.cssText = 'font-family:"Courier Prime",monospace;font-size:13px;color:#f0ece4;margin-bottom:3px;'
-    n.textContent = c.name
-    const r = document.createElement('div')
-    r.style.cssText = 'font-family:"DM Sans",sans-serif;font-size:11px;color:rgba(240,236,228,0.4);margin-bottom:8px;'
-    r.textContent = c.role
-    const w = document.createElement('div')
-    w.style.cssText = 'font-family:"DM Sans",sans-serif;font-size:12px;color:rgba(240,236,228,0.62);line-height:1.5;font-style:italic;'
-    w.textContent = c.why
-    el.appendChild(n)
-    el.appendChild(r)
-    el.appendChild(w)
-    document.body.appendChild(el)
-    setTimeout(() => el.remove(), 4000)
-  }, false)
+  document.addEventListener('orbit:node-selected', e => e.stopImmediatePropagation(), true)
 
   let activeOrbit = null
 
@@ -416,24 +477,24 @@ async function init() {
     if (activeOrbit === orbit.id) return
     activeOrbit = orbit.id
 
-    // Update chips
-    chipRow.querySelectorAll('.spec-chip').forEach(c => {
-      c.classList.toggle('active', c.dataset.id === orbit.id)
-    })
+    orbitSelect.value = orbit.id
 
-    // Update info bar
     infoName.textContent = orbit.name
     infoEra.textContent = orbit.era
     infoField.textContent = '· ' + orbit.field
 
-    // Set identity name for center circle display
     window.ORBIT_IDENTITY = { name: orbit.name }
-
-    // Load contacts into canvas
     canvas.mount(orbit.contacts)
     canvas.update(orbit.contacts)
 
-    // Track view (fire-and-forget)
+    // Populate read-only contacts panel
+    const panel = document.getElementById('orbit-list-panel')
+    const contactsEl = panel?.querySelector('.ol-contacts')
+    if (contactsEl) {
+      contactsEl.innerHTML = ''
+      orbit.contacts.forEach(c => contactsEl.appendChild(buildContactCard(c)))
+    }
+
     fetch('/api/suggest-prompted-kv', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -441,33 +502,32 @@ async function init() {
     }).catch(() => {})
   }
 
-  // Build chips
-  DEMO_ORBITS.forEach(orbit => {
-    const chip = document.createElement('button')
-    chip.className = 'spec-chip'
-    chip.dataset.id = orbit.id
-
-    const initEl = document.createElement('span')
-    initEl.className = 'spec-chip-initials'
-    initEl.textContent = orbit.initials
-
-    const nameEl = document.createElement('span')
-    nameEl.className = 'spec-chip-name'
-    nameEl.textContent = orbit.name
-
-    const fieldEl = document.createElement('span')
-    fieldEl.className = 'spec-chip-field'
-    fieldEl.textContent = orbit.field
-
-    chip.appendChild(initEl)
-    chip.appendChild(nameEl)
-    chip.appendChild(fieldEl)
-
-    chip.addEventListener('click', () => loadOrbit(orbit))
-    chipRow.appendChild(chip)
+  orbitSelect.addEventListener('change', () => {
+    const orbit = DEMO_ORBITS.find(o => o.id === orbitSelect.value)
+    if (orbit) {
+      activeOrbit = null
+      loadOrbit(orbit)
+    }
   })
 
-  // Load first orbit by default
+  // Configure orbit-list-panel for spectator (after IIFE has run)
+  requestAnimationFrame(() => {
+    const panel = document.getElementById('orbit-list-panel')
+    if (!panel) return
+    const fw = panel.querySelector('.ol-filter-wrap')
+    const sr = panel.querySelector('.ol-stage-row')
+    const footer = panel.querySelector('.ol-footer')
+    const ss = panel.querySelector('.ol-suggest-section')
+    const exportBtn = panel.querySelector('.ol-export-btn')
+    const headerSpan = panel.querySelector('.ol-header span')
+    if (fw) fw.style.display = 'none'
+    if (sr) sr.style.display = 'none'
+    if (footer) footer.style.display = 'none'
+    if (ss) ss.style.display = 'none'
+    if (exportBtn) exportBtn.style.display = 'none'
+    if (headerSpan) headerSpan.textContent = 'DEMO ORBIT'
+  })
+
   loadOrbit(DEMO_ORBITS[0])
 }
 
