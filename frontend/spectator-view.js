@@ -678,8 +678,9 @@ async function init() {
     body: JSON.stringify({ action: 'visit' }),
   }).catch(() => {})
 
-  // Neutralize active user gravity profile — must never appear in spectator mode
-  window.showGravityProfile = () => {}
+  // In spectator mode, center node click routes through showGravityProfile → show profile tab
+  // (canvas always re-creates centerG listeners, so we own the function not the element)
+  window.showGravityProfile = () => showProfileTab()
   document.getElementById('gravity-profile-modal')?.remove()
   const gpMobileBtn = document.getElementById('nav-gp-btn-mobile')
   if (gpMobileBtn) gpMobileBtn.style.display = 'none'
@@ -908,25 +909,6 @@ async function init() {
     requestAnimationFrame(() => {
       const svg = canvasArea.querySelector('svg')
       if (!svg) return
-
-      // Center node → open gravity profile tab
-      const glowCircle = svg.querySelector('circle[r="40"]')
-      const centerG = glowCircle?.closest('g')
-      if (centerG) {
-        centerG.addEventListener('click', showProfileTab)
-        let cts = null
-        centerG.addEventListener('touchstart', evt => {
-          const touch = evt.touches[0]
-          cts = { x: touch.clientX, y: touch.clientY }
-        }, { passive: true })
-        centerG.addEventListener('touchend', evt => {
-          if (!cts) return
-          const touch = evt.changedTouches[0]
-          const d = Math.hypot(touch.clientX - cts.x, touch.clientY - cts.y)
-          cts = null
-          if (d < 10) showProfileTab()
-        }, { passive: true })
-      }
 
       orbit.contacts.forEach(c => {
         const ci = c.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
