@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#0a0a0a"/>
+
+  <!-- Decorative orbital rings (background) -->
+  <circle cx="600" cy="270" r="280" fill="none" stroke="rgba(184,115,51,0.04)" stroke-width="1"/>
+  <circle cx="600" cy="270" r="220" fill="none" stroke="rgba(184,115,51,0.05)" stroke-width="1"/>
+  <circle cx="600" cy="270" r="160" fill="none" stroke="rgba(184,115,51,0.06)" stroke-width="1"/>
+  <circle cx="600" cy="270" r="100" fill="none" stroke="rgba(184,115,51,0.07)" stroke-width="1"/>
+
+  <!-- Atom icon — 3 orbit ellipses + center dot -->
+  <ellipse cx="600" cy="175" rx="56" ry="19"
+           fill="none" stroke="#b87333" stroke-width="1.4" opacity="0.9"/>
+  <ellipse cx="600" cy="175" rx="56" ry="19"
+           fill="none" stroke="#b87333" stroke-width="1.4" opacity="0.9"
+           transform="rotate(60 600 175)"/>
+  <ellipse cx="600" cy="175" rx="56" ry="19"
+           fill="none" stroke="#b87333" stroke-width="1.4" opacity="0.9"
+           transform="rotate(120 600 175)"/>
+  <circle cx="600" cy="175" r="5.5" fill="#b87333"/>
+
+  <!-- ORBIT wordmark -->
+  <text x="600" y="335"
+        text-anchor="middle"
+        font-family="'Courier Prime', 'Courier New', Courier, monospace"
+        font-size="104" font-weight="700"
+        letter-spacing="20"
+        fill="#b87333">ORBIT</text>
+
+  <!-- Primary tagline -->
+  <text x="600" y="405"
+        text-anchor="middle"
+        font-family="'Courier Prime', 'Courier New', Courier, monospace"
+        font-size="26" font-weight="400"
+        letter-spacing="1"
+        fill="#f0ece4" opacity="0.78">Find the people obsessed with your problem</text>
+
+  <!-- Divider line -->
+  <line x1="480" y1="440" x2="720" y2="440" stroke="#b87333" stroke-width="0.5" opacity="0.25"/>
+
+  <!-- Sub-label -->
+  <text x="600" y="478"
+        text-anchor="middle"
+        font-family="'Courier Prime', 'Courier New', Courier, monospace"
+        font-size="13" font-weight="400"
+        letter-spacing="5"
+        fill="#b87333" opacity="0.4">EARLY ACCESS</text>
+
+</svg>
