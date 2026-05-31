@@ -794,12 +794,7 @@ async function init() {
     canvasArea.style.display = ''
     profilePanel.style.display = 'none'
   })
-  tabProfile.addEventListener('click', () => {
-    tabProfile.classList.add('active')
-    tabOrbit.classList.remove('active')
-    canvasArea.style.display = 'none'
-    profilePanel.style.display = 'block'
-  })
+  tabProfile.addEventListener('click', showProfileTab)
 
   const canvas = new OrbitCanvas(canvasArea)
 
@@ -902,10 +897,37 @@ async function init() {
     showContactDetail(c)
   }, true)
 
+  function showProfileTab() {
+    tabProfile.classList.add('active')
+    tabOrbit.classList.remove('active')
+    canvasArea.style.display = 'none'
+    profilePanel.style.display = 'block'
+  }
+
   function attachNodeListeners(orbit) {
     requestAnimationFrame(() => {
       const svg = canvasArea.querySelector('svg')
       if (!svg) return
+
+      // Center node → open gravity profile tab
+      const glowCircle = svg.querySelector('circle[r="40"]')
+      const centerG = glowCircle?.closest('g')
+      if (centerG) {
+        centerG.addEventListener('click', showProfileTab)
+        let cts = null
+        centerG.addEventListener('touchstart', evt => {
+          const touch = evt.touches[0]
+          cts = { x: touch.clientX, y: touch.clientY }
+        }, { passive: true })
+        centerG.addEventListener('touchend', evt => {
+          if (!cts) return
+          const touch = evt.changedTouches[0]
+          const d = Math.hypot(touch.clientX - cts.x, touch.clientY - cts.y)
+          cts = null
+          if (d < 10) showProfileTab()
+        }, { passive: true })
+      }
+
       orbit.contacts.forEach(c => {
         const ci = c.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
         svg.querySelectorAll('g').forEach(g => {
