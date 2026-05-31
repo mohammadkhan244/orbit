@@ -665,6 +665,7 @@ async function init() {
   let currentOrbit = null
   let detailPanel = null
   let outsideListener = null
+  let _lastShowAt = 0
 
   function closeContactDetail() {
     if (outsideListener) {
@@ -680,6 +681,9 @@ async function init() {
   }
 
   function showContactDetail(c) {
+    const now = Date.now()
+    if (now - _lastShowAt < 80) { _lastShowAt = now; return }
+    _lastShowAt = now
     if (outsideListener) {
       document.removeEventListener('click', outsideListener, true)
       outsideListener = null
@@ -744,14 +748,43 @@ async function init() {
     }, 100)
   }
 
-  // Intercept orbit:node-selected in capture phase — open read-only detail panel
+  // Intercept orbit:node-selected in capture phase — canvas spreads contact directly into detail
   document.addEventListener('orbit:node-selected', e => {
     e.stopImmediatePropagation()
-    const contact = e.detail?.contact
-    if (!contact) return
+    const contact = e.detail  // canvas does: dispatchEvent({ detail: { ...contact } })
+    if (!contact?.name) return
     const c = currentOrbit?.contacts?.find(x => x.id === contact.id || x.name === contact.name) || contact
     showContactDetail(c)
   }, true)
+
+  function attachNodeListeners(orbit) {
+    requestAnimationFrame(() => {
+      const svg = canvasArea.querySelector('svg')
+      if (!svg) return
+      orbit.contacts.forEach(c => {
+        const ci = c.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+        svg.querySelectorAll('g').forEach(g => {
+          const t = g.querySelector('text')
+          if (!t || t.textContent.trim() !== ci) return
+          // click — debounce guard in showContactDetail handles double-trigger
+          g.addEventListener('click', () => showContactDetail(c))
+          // touchend — track start position to distinguish tap from drag
+          let ts = null
+          g.addEventListener('touchstart', evt => {
+            const touch = evt.touches[0]
+            ts = { x: touch.clientX, y: touch.clientY }
+          }, { passive: true })
+          g.addEventListener('touchend', evt => {
+            if (!ts) return
+            const touch = evt.changedTouches[0]
+            const d = Math.hypot(touch.clientX - ts.x, touch.clientY - ts.y)
+            ts = null
+            if (d < 10) showContactDetail(c)
+          }, { passive: true })
+        })
+      })
+    })
+  }
 
   function loadOrbit(orbit) {
     if (activeOrbit === orbit.id) return
@@ -766,6 +799,7 @@ async function init() {
     window.ORBIT_IDENTITY = { name: orbit.name }
     canvas.mount(orbit.contacts)
     canvas.update(orbit.contacts)
+    attachNodeListeners(orbit)
 
     // Populate read-only contacts panel (if open)
     const panel = document.getElementById('orbit-list-panel')
