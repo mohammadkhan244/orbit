@@ -76,10 +76,71 @@ function injectStyles() {
     .spec-orbit-select:focus { border-color: #b87333; }
     .spec-orbit-select option { background: #0a0a0a; color: #f0ece4; }
 
+    .spec-tab-row {
+      position: absolute;
+      left: 0; right: 0; top: 100px; height: 36px;
+      display: flex; align-items: stretch;
+      padding: 0 20px; gap: 0;
+      border-bottom: 1px solid rgba(184,115,51,0.08);
+      background: rgba(10,10,10,0.5);
+      z-index: 4;
+    }
+    .spec-tab-btn {
+      background: none; border: none;
+      border-bottom: 2px solid transparent;
+      color: rgba(240,236,228,0.35);
+      font-family: 'Courier Prime', monospace;
+      font-size: 10px; letter-spacing: 0.18em;
+      text-transform: uppercase;
+      padding: 0 16px; cursor: pointer;
+      transition: all 0.12s ease;
+    }
+    .spec-tab-btn.active { color: #b87333; border-bottom-color: #b87333; }
+    .spec-tab-btn:hover:not(.active) { color: rgba(240,236,228,0.65); }
+
     .spec-canvas-area {
       position: absolute;
-      top: 100px; left: 0; right: 0; bottom: 56px;
+      top: 136px; left: 0; right: 0; bottom: 56px;
       overflow: hidden;
+    }
+
+    .spec-profile-panel {
+      position: absolute;
+      top: 136px; left: 0; right: 0; bottom: 56px;
+      overflow-y: auto; padding: 32px 36px;
+      box-sizing: border-box; display: none;
+    }
+    .spec-profile-watermark {
+      text-align: right;
+      font-family: 'Courier Prime', monospace;
+      font-size: 10px; letter-spacing: 0.22em;
+      color: rgba(184,115,51,0.18);
+      text-transform: uppercase;
+      user-select: none; pointer-events: none;
+      margin-bottom: 28px;
+    }
+    .spec-profile-label {
+      font-family: 'Courier Prime', monospace;
+      font-size: 10px; letter-spacing: 0.18em;
+      color: #b87333; text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .spec-profile-identity {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px; color: #f0ece4; line-height: 1.5;
+      padding-bottom: 24px;
+      border-bottom: 1px solid rgba(184,115,51,0.12);
+      margin-bottom: 24px;
+    }
+    .spec-profile-field {
+      padding-bottom: 24px;
+      border-bottom: 1px solid rgba(184,115,51,0.12);
+      margin-bottom: 24px;
+    }
+    .spec-profile-field:last-child { border-bottom: none; margin-bottom: 0; }
+    .spec-profile-value {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px; color: #f0ece4; line-height: 1.65;
     }
 
     .spec-watermark {
@@ -346,7 +407,9 @@ function injectStyles() {
       .spec-banner-text { display: none; }
       .spec-selector-row { top: 36px; height: 40px; padding: 0 12px; }
       .spec-orbit-label { display: none; }
-      .spec-canvas-area { top: 76px; }
+      .spec-tab-row { top: 76px; }
+      .spec-canvas-area { top: 112px; }
+      .spec-profile-panel { top: 112px; padding: 24px 20px; }
       .spec-access-bar {
         background: #b87333;
         border-top: none;
@@ -558,6 +621,50 @@ function buildContactCard(c, onClick) {
   return card
 }
 
+function fillProfilePanel(panel, orbit) {
+  panel.innerHTML = ''
+  const p = orbit.gravityProfile || {}
+
+  const wm = document.createElement('div')
+  wm.className = 'spec-profile-watermark'
+  wm.textContent = 'DEMO PROFILE'
+  panel.appendChild(wm)
+
+  const idLabel = document.createElement('div')
+  idLabel.className = 'spec-profile-label'
+  idLabel.textContent = 'IDENTITY PROFILE'
+  panel.appendChild(idLabel)
+
+  const idValue = document.createElement('div')
+  idValue.className = 'spec-profile-identity'
+  idValue.textContent = [orbit.name, orbit.era, orbit.field].filter(Boolean).join(' · ')
+  panel.appendChild(idValue)
+
+  const fields = [
+    { label: 'WHAT ARE YOU WORKING ON?', value: p.mission },
+    { label: 'WHAT DO YOU WANT TO BE KNOWN FOR?', value: p.desiredReputation },
+    { label: 'WHAT KIND OF THINKING PARTNER ARE YOU LOOKING FOR?', value: p.thinkingPartner },
+    { label: 'THEIR STORY', value: p.story },
+  ]
+
+  fields.forEach(({ label, value }) => {
+    const field = document.createElement('div')
+    field.className = 'spec-profile-field'
+
+    const lbl = document.createElement('div')
+    lbl.className = 'spec-profile-label'
+    lbl.textContent = label
+    field.appendChild(lbl)
+
+    const val = document.createElement('div')
+    val.className = 'spec-profile-value'
+    val.textContent = value || ''
+    field.appendChild(val)
+
+    panel.appendChild(field)
+  })
+}
+
 async function init() {
   if (!window.ORBIT_SPECTATOR) return
 
@@ -630,6 +737,19 @@ async function init() {
   selectorRow.appendChild(orbitSelect)
   container.appendChild(selectorRow)
 
+  // Tab row
+  const tabRow = document.createElement('div')
+  tabRow.className = 'spec-tab-row'
+  const tabOrbit = document.createElement('button')
+  tabOrbit.className = 'spec-tab-btn active'
+  tabOrbit.textContent = 'ORBIT'
+  const tabProfile = document.createElement('button')
+  tabProfile.className = 'spec-tab-btn'
+  tabProfile.textContent = 'GRAVITY PROFILE'
+  tabRow.appendChild(tabOrbit)
+  tabRow.appendChild(tabProfile)
+  container.appendChild(tabRow)
+
   // Canvas area
   const canvasArea = document.createElement('div')
   canvasArea.className = 'spec-canvas-area'
@@ -655,6 +775,23 @@ async function init() {
 
   // Persistent early access bar at the bottom
   container.appendChild(buildAccessBar())
+
+  const profilePanel = document.createElement('div')
+  profilePanel.className = 'spec-profile-panel'
+  container.appendChild(profilePanel)
+
+  tabOrbit.addEventListener('click', () => {
+    tabOrbit.classList.add('active')
+    tabProfile.classList.remove('active')
+    canvasArea.style.display = ''
+    profilePanel.style.display = 'none'
+  })
+  tabProfile.addEventListener('click', () => {
+    tabProfile.classList.add('active')
+    tabOrbit.classList.remove('active')
+    canvasArea.style.display = 'none'
+    profilePanel.style.display = ''
+  })
 
   const canvas = new OrbitCanvas(canvasArea)
 
@@ -800,6 +937,7 @@ async function init() {
     canvas.mount(orbit.contacts)
     canvas.update(orbit.contacts)
     attachNodeListeners(orbit)
+    fillProfilePanel(profilePanel, orbit)
 
     // Populate read-only contacts panel (if open)
     const panel = document.getElementById('orbit-list-panel')
