@@ -720,10 +720,10 @@ function showPostOnboardingScreen(overlay, inner, sessionId, identity) {
     body: JSON.stringify({ sessionId, identity, sendWelcome: true }),
   }).catch(err => console.error('[onboarding] identity POST failed:', err))
 
-  fetch('/api/suggest-orbit', {
+  fetch('/api/suggest', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ gravityProfile: identity, existingContacts: [] }),
+    body: JSON.stringify({ mode: 'orbit', gravityProfile: identity, existingContacts: [] }),
   })
   .then(r => {
     if (!r.ok) throw new Error(r.status)

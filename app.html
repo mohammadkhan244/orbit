@@ -2329,7 +2329,7 @@
         votedMsg.textContent = 'Your vote is counted.'
       }
 
-      fetch('/api/aperture-vote')
+      fetch('/api/aperture')
         .then(r => r.json())
         .then(data => { upCount.textContent = data.up; downCount.textContent = data.down })
         .catch(() => {})
@@ -2338,10 +2338,10 @@
         upBtn.disabled = true
         downBtn.disabled = true
         try {
-          const r = await fetch('/api/aperture-vote', {
+          const r = await fetch('/api/aperture', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ vote }),
+            body: JSON.stringify({ type: 'vote', vote }),
           })
           const data = await r.json()
           upCount.textContent = data.up
@@ -2371,10 +2371,11 @@
         const identity = window.ORBIT_IDENTITY
           || (() => { try { return JSON.parse(localStorage.getItem('orbit_identity') || 'null') } catch { return null } })()
         try {
-          await fetch('/api/aperture-feedback', {
+          await fetch('/api/aperture', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+              type: 'feedback',
               feedback,
               name: identity?.name || '',
               email: identity?.email || '',
@@ -2731,10 +2732,11 @@
         suggestBody.innerHTML = '<div class="ol-suggest-loading">Finding people for your orbit...</div>'
         suggestAgainBtn.style.display = 'none'
         var contacts = window.ORBIT_CONTACTS || []
-        fetch('/api/suggest-orbit', {
+        fetch('/api/suggest', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            mode: 'orbit',
             gravityProfile: identity,
             existingContacts: contacts.map(function(c) { return c.name })
           })

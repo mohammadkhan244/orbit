@@ -118,8 +118,7 @@ function kvSetContacts(sessionId, contacts) {
 
 // ── Persistence helpers ───────────────────────────────────────────────────────
 
-const LS_KEY     = 'orbit_contacts'
-const LS_PENDING = 'orbit_pending'
+const LS_KEY = 'orbit_contacts'
 
 const ls = {
   read:   ()           => { try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]') } catch { return [] } },
@@ -131,63 +130,6 @@ const ls = {
   },
 }
 
-const pending = {
-  read:  ()    => { try { return JSON.parse(localStorage.getItem(LS_PENDING) || '[]') } catch { return [] } },
-  add:   (op)  => { const ops = pending.read(); ops.push(op); try { localStorage.setItem(LS_PENDING, JSON.stringify(ops)) } catch {} },
-  clear: ()    => { try { localStorage.removeItem(LS_PENDING) } catch {} },
-}
-
-async function sheetsGet() {
-  const r = await fetch('/api/sheets')
-  if (!r.ok) throw new Error(`sheets GET ${r.status}`)
-  return r.json()
-}
-
-async function sheetsPost(contact) {
-  const r = await fetch('/api/sheets', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(contact),
-  })
-  if (!r.ok) throw new Error(`sheets POST ${r.status}`)
-}
-
-async function sheetsPatch(id, fields) {
-  const r = await fetch('/api/sheets', {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id, fields }),
-  })
-  if (!r.ok) throw new Error(`sheets PATCH ${r.status}`)
-}
-
-// Apply pending ops onto a contacts array so local state stays coherent
-// while flush runs in the background
-function applyPending(contacts, ops) {
-  let cs = [...contacts]
-  for (const op of ops) {
-    if (op.type === 'add'   && !cs.find(c => c.id === op.contact.id)) cs.push(op.contact)
-    if (op.type === 'patch') cs = cs.map(c => c.id === op.id ? { ...c, ...op.fields } : c)
-  }
-  return cs
-}
-
-async function flushPending() {
-  const ops = pending.read()
-  if (ops.length === 0) return
-  const failed = []
-  for (const op of ops) {
-    try {
-      if (op.type === 'add')   await sheetsPost(op.contact)
-      if (op.type === 'patch') await sheetsPatch(op.id, op.fields)
-    } catch { failed.push(op) }
-  }
-  if (failed.length > 0) {
-    try { localStorage.setItem(LS_PENDING, JSON.stringify(failed)) } catch {}
-  } else {
-    pending.clear()
-  }
-}
 
 // ────────────────────────────────────────────────────────────────────────────
 
@@ -313,17 +255,14 @@ async function init() {
       window.ORBIT_SESSION_ID = sessionId
 
       const kvContacts = await kvGetContacts(sessionId)
-      const ops    = pending.read()
-      const merged = ops.length > 0 ? applyPending(kvContacts, ops) : kvContacts
       // Preserve contacts added before KV load (e.g. from post-onboarding screen)
-      const localOnly = contacts.filter(c => !merged.find(mc => mc.id === c.id))
-      contacts = [...merged, ...localOnly]
+      const localOnly = contacts.filter(c => !kvContacts.find(mc => mc.id === c.id))
+      contacts = [...kvContacts, ...localOnly]
       if (localOnly.length > 0) kvSetContacts(sessionId, contacts).catch(() => {})
       ls.write(contacts)
       canvas.update(contacts)
       updateProgress(contacts)
       syncGlobal()
-      if (ops.length > 0) flushPending().catch(() => {})
 
       // Show suggestion banner to non-guest users with fewer than 3 contacts
       if (!window.ORBIT_GUEST && contacts.length < 3) {
@@ -343,7 +282,7 @@ async function init() {
     }
   })()
 
-  // ── CONTACT_ADDED: canvas + Sheets ───────────────────────────────
+  // ── CONTACT_ADDED: canvas + KV ───────────────────────────────────
   document.addEventListener(EVENTS.CONTACT_ADDED, async e => {
     const contact = e.detail
     contacts = [...contacts, contact]
@@ -352,14 +291,9 @@ async function init() {
     updateProgress(contacts)
     syncGlobal()
     if (sessionId) kvSetContacts(sessionId, contacts).catch(() => {})
-    try {
-      await sheetsPost(contact)
-    } catch {
-      pending.add({ type: 'add', contact })
-    }
   })
 
-  // ── STAGE_CHANGED: KV + Sheets sync ─────────────────────────────
+  // ── STAGE_CHANGED: KV sync ────────────────────────────────────────
   document.addEventListener(EVENTS.STAGE_CHANGED, async e => {
     const { id, newStatus } = e.detail
     const contact = contacts.find(c => c.id === id)
@@ -368,14 +302,9 @@ async function init() {
     ls.update(contact.id, { status: newStatus })
     syncGlobal()
     if (sessionId) kvSetContacts(sessionId, contacts).catch(() => {})
-    try {
-      await sheetsPatch(contact.id, { status: newStatus })
-    } catch {
-      pending.add({ type: 'patch', id: contact.id, fields: { status: newStatus } })
-    }
   })
 
-  // ── NOTES_UPDATED: KV + Sheets sync ──────────────────────────────
+  // ── NOTES_UPDATED: KV sync ────────────────────────────────────────
   document.addEventListener(EVENTS.NOTES_UPDATED, async e => {
     const { id, notes } = e.detail
     const contact = contacts.find(c => c.id === id)
@@ -384,11 +313,6 @@ async function init() {
     ls.update(contact.id, { notes })
     syncGlobal()
     if (sessionId) kvSetContacts(sessionId, contacts).catch(() => {})
-    try {
-      await sheetsPatch(contact.id, { notes })
-    } catch {
-      pending.add({ type: 'patch', id: contact.id, fields: { notes } })
-    }
   })
 }
 
