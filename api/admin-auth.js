@@ -120,6 +120,22 @@ export default async function handler(req, res) {
       }
     }
 
+    if (action === 'feedback') {
+      try {
+        const keys = await kv.keys('orbit:feedback:*')
+        const entries = keys.length > 0
+          ? await Promise.all(keys.map(k => kv.get(k).then(v => v || null)))
+          : []
+        const sorted = entries
+          .filter(Boolean)
+          .sort((a, b) => new Date(b.date) - new Date(a.date))
+        return res.status(200).json({ feedback: sorted })
+      } catch (err) {
+        console.error('[admin-auth] feedback GET failed', err)
+        return res.status(502).json({ error: 'KV unavailable', detail: err.message })
+      }
+    }
+
     // action=list (default)
     try {
       const keys = await kv.keys('orbit:identity:*')

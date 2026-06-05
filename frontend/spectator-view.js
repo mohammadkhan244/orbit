@@ -1,5 +1,6 @@
 import { DEMO_ORBITS } from './demo-orbits.js'
 import { OrbitCanvas } from './orbit-canvas.js'
+import { initFeedbackPanel } from './feedback-panel.js'
 
 function injectStyles() {
   if (document.getElementById('spectator-styles')) return
@@ -671,6 +672,8 @@ async function init() {
   if (!window.ORBIT_SPECTATOR) return
 
   injectStyles()
+
+  initFeedbackPanel()
 
   fetch('/api/suggest-prompted-kv', {
     method: 'POST',

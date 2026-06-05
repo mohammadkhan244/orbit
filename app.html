@@ -743,6 +743,54 @@
     .admin-profile-card-detail { padding-top: 20px; display: none; }
     .admin-profile-card.expanded .admin-profile-card-detail { display: block; }
 
+    /* ── ADMIN STICKY NAV ── */
+    .admin-sticky-nav {
+      position: sticky; top: 0; z-index: 10;
+      display: flex; align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      height: 44px;
+      background: rgba(10,10,10,0.97);
+      border-bottom: 1px solid rgba(184,115,51,0.12);
+      backdrop-filter: blur(4px);
+    }
+    .admin-jump-wrap {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .admin-jump-label {
+      font-family: 'Courier Prime', monospace;
+      font-size: 9px; letter-spacing: 0.22em;
+      color: rgba(184,115,51,0.5);
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .admin-jump-select {
+      background: transparent;
+      border: 1px solid rgba(184,115,51,0.28);
+      color: rgba(240,236,228,0.7);
+      font-family: 'Courier Prime', monospace;
+      font-size: 11px; letter-spacing: 0.08em;
+      padding: 4px 8px;
+      cursor: pointer; outline: none;
+      -webkit-appearance: none; appearance: none;
+    }
+    .admin-jump-select:focus { border-color: #b87333; }
+    .admin-jump-select option { background: #0a0a0a; color: #f0ece4; }
+    .admin-all-btn {
+      background: none;
+      border: 1px solid rgba(184,115,51,0.28);
+      color: rgba(184,115,51,0.6);
+      font-family: 'Courier Prime', monospace;
+      font-size: 9px; letter-spacing: 0.18em;
+      text-transform: uppercase;
+      padding: 4px 12px; cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .admin-all-btn:hover {
+      background: rgba(184,115,51,0.08);
+      border-color: #b87333; color: #b87333;
+    }
+
     /* ── STAGE DROPDOWN ── */
     .panel-stage-select {
       background: #0a0a0a !important;
@@ -1652,9 +1700,10 @@
       container.innerHTML = ''
       const code = sessionStorage.getItem('orbit_admin_code') || ''
 
-      function makeSection(title) {
+      function makeSection(title, id) {
         const sec = document.createElement('div')
         sec.className = 'admin-section'
+        if (id) sec.id = id
         const hdr = document.createElement('div')
         hdr.className = 'admin-section-header'
         hdr.textContent = title
@@ -1662,8 +1711,50 @@
         return sec
       }
 
+      // ── STICKY NAV ──────────────────────────────────────────────────────────
+      const stickyNav = document.createElement('div')
+      stickyNav.className = 'admin-sticky-nav'
+      const jumpWrap = document.createElement('div')
+      jumpWrap.className = 'admin-jump-wrap'
+      const jumpLabel = document.createElement('span')
+      jumpLabel.className = 'admin-jump-label'
+      jumpLabel.textContent = 'JUMP TO'
+      const jumpSelect = document.createElement('select')
+      jumpSelect.className = 'admin-jump-select'
+      ;[
+        { label: 'Overview',           id: 'admin-overview'  },
+        { label: 'Token Usage',        id: 'admin-tokens'    },
+        { label: 'Active Users',       id: 'admin-users'     },
+        { label: 'Waitlist',           id: 'admin-waitlist'  },
+        { label: 'Spectator Activity', id: 'admin-spectator' },
+        { label: 'Gravity Profiles',   id: 'admin-profiles'  },
+        { label: 'Feedback',           id: 'admin-feedback'  },
+      ].forEach(({ label, id }) => {
+        const opt = document.createElement('option')
+        opt.value = id
+        opt.textContent = label
+        jumpSelect.appendChild(opt)
+      })
+      jumpSelect.addEventListener('change', () => {
+        const target = document.getElementById(jumpSelect.value)
+        if (!target) return
+        const navH = stickyNav.getBoundingClientRect().height
+        const top = target.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop - navH - 8
+        container.scrollTo({ top, behavior: 'smooth' })
+        jumpSelect.value = jumpSelect.options[0].value
+      })
+      jumpWrap.appendChild(jumpLabel)
+      jumpWrap.appendChild(jumpSelect)
+      const allBtn = document.createElement('button')
+      allBtn.className = 'admin-all-btn'
+      allBtn.textContent = 'ALL ↑'
+      allBtn.addEventListener('click', () => container.scrollTo({ top: 0, behavior: 'smooth' }))
+      stickyNav.appendChild(jumpWrap)
+      stickyNav.appendChild(allBtn)
+      container.appendChild(stickyNav)
+
       // ── 1. OVERVIEW STATS ────────────────────────────────────────────────────
-      const sec1 = makeSection('OVERVIEW STATS')
+      const sec1 = makeSection('OVERVIEW STATS', 'admin-overview')
       const overviewGrid = document.createElement('div')
       overviewGrid.className = 'admin-overview-grid'
       sec1.appendChild(overviewGrid)
@@ -1697,7 +1788,7 @@
         .catch(() => { sec1.remove() })
 
       // ── 2. TOKEN USAGE ───────────────────────────────────────────────────────
-      const sec2 = makeSection('TOKEN USAGE')
+      const sec2 = makeSection('TOKEN USAGE', 'admin-tokens')
       container.appendChild(sec2)
 
       fetch(`/api/admin-auth?action=tokens&code=${encodeURIComponent(code)}`)
@@ -1783,7 +1874,7 @@
         })
 
       // ── 3. ACTIVE USERS ──────────────────────────────────────────────────────
-      const sec3 = makeSection('ACTIVE USERS')
+      const sec3 = makeSection('ACTIVE USERS', 'admin-users')
       const usersWrap = document.createElement('div')
       usersWrap.className = 'admin-table-wrap'
       usersWrap.style.maxHeight = '400px'
@@ -1791,11 +1882,11 @@
       container.appendChild(sec3)
 
       // ── 4. WAITLIST ──────────────────────────────────────────────────────────
-      const sec4 = makeSection('WAITLIST')
+      const sec4 = makeSection('WAITLIST', 'admin-waitlist')
       container.appendChild(sec4)
 
       // ── 5. SPECTATOR ACTIVITY ────────────────────────────────────────────────
-      const sec5 = makeSection('SPECTATOR ACTIVITY')
+      const sec5 = makeSection('SPECTATOR ACTIVITY', 'admin-spectator')
       container.appendChild(sec5)
 
       fetch(`/api/admin-auth?action=spectator-stats&code=${encodeURIComponent(code)}`)
@@ -1872,7 +1963,7 @@
         })
 
       // ── 6. ALL GRAVITY PROFILES ──────────────────────────────────────────────
-      const sec6 = makeSection('ALL GRAVITY PROFILES')
+      const sec6 = makeSection('ALL GRAVITY PROFILES', 'admin-profiles')
       container.appendChild(sec6)
 
       const profilesLoadingEl = document.createElement('div')
@@ -1959,6 +2050,52 @@
         profilesLoadingEl.textContent = 'Failed to load profiles.'
         sec6.appendChild(Object.assign(document.createElement('div'), { className: 'admin-tokens-empty', textContent: 'Failed to load profiles.' }))
       }
+
+      // ── 7. FEEDBACK ─────────────────────────────────────────────────────────
+      const sec7 = makeSection('FEEDBACK', 'admin-feedback')
+      container.appendChild(sec7)
+
+      fetch(`/api/admin-auth?action=feedback&code=${encodeURIComponent(code)}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (!data) return
+          const { feedback } = data
+
+          const fbCount = document.createElement('div')
+          fbCount.style.cssText = 'font-family:"Courier Prime",monospace;font-size:22px;font-weight:700;color:#b87333;margin-bottom:6px;'
+          fbCount.textContent = feedback.length
+          const fbCountLabel = document.createElement('div')
+          fbCountLabel.style.cssText = 'font-family:"Courier Prime",monospace;font-size:9px;letter-spacing:0.16em;color:rgba(240,236,228,0.3);text-transform:uppercase;margin-bottom:24px;'
+          fbCountLabel.textContent = `Submission${feedback.length === 1 ? '' : 's'}`
+          sec7.appendChild(fbCount)
+          sec7.appendChild(fbCountLabel)
+
+          if (feedback.length === 0) {
+            sec7.appendChild(Object.assign(document.createElement('div'), { className: 'admin-tokens-empty', textContent: 'No feedback yet.' }))
+            return
+          }
+
+          const wrap = document.createElement('div')
+          wrap.className = 'admin-table-wrap'
+          wrap.style.maxHeight = '400px'
+          const table = document.createElement('table')
+          table.className = 'admin-table'
+          table.innerHTML = '<thead><tr><th>Type</th><th>Message</th><th>Email</th><th>Date</th></tr></thead>'
+          const tbody = document.createElement('tbody')
+          feedback.forEach(f => {
+            const tr = document.createElement('tr')
+            const msg = f.message ? (f.message.length > 80 ? f.message.slice(0, 80) + '…' : f.message) : '—'
+            const date = f.date ? new Date(f.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
+            tr.innerHTML = `<td>${f.type || '—'}</td><td style="color:rgba(240,236,228,0.55)">${msg}</td><td>${f.email || '—'}</td><td>${date}</td>`
+            tbody.appendChild(tr)
+          })
+          table.appendChild(tbody)
+          wrap.appendChild(table)
+          sec7.appendChild(wrap)
+        })
+        .catch(() => {
+          sec7.appendChild(Object.assign(document.createElement('div'), { className: 'admin-tokens-empty', textContent: 'Feedback data unavailable.' }))
+        })
     }
 
     async function loadAdminProfile(sessionId, rightEl) {
@@ -2260,16 +2397,18 @@
   <script type="module" src="/frontend/search-view.js"></script>
   <script type="module" src="/frontend/suggest-view.js"></script>
   <script type="module" src="/frontend/spectator-view.js"></script>
+  <script type="module">
+    import { initFeedbackPanel, openFeedbackPanel } from '/frontend/feedback-panel.js'
+    initFeedbackPanel()
+    window.openFeedbackPanel = openFeedbackPanel
+  </script>
 
   <button id="feedback-copy-btn">FEEDBACK</button>
   <script>
     ;(function() {
       var btn = document.getElementById('feedback-copy-btn')
       btn.addEventListener('click', function() {
-        navigator.clipboard.writeText('mohammadkhan@themohammadkhan.com').then(function() {
-          btn.textContent = 'EMAIL COPIED'
-          setTimeout(function() { btn.textContent = 'FEEDBACK' }, 2000)
-        })
+        if (window.openFeedbackPanel) { window.openFeedbackPanel(); return }
       })
     })()
   </script>
