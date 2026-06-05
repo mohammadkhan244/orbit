@@ -246,6 +246,20 @@ function injectStyles() {
       font-size: 14px; color: rgba(240,236,228,0.4);
       margin-bottom: 24px; font-style: italic;
     }
+    .postonboard-tier-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 16px 0 8px;
+    }
+    .postonboard-tier-text {
+      font-family: 'Courier Prime', monospace;
+      font-size: 9px; letter-spacing: 0.18em;
+      color: #b87333; text-transform: uppercase;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .postonboard-tier-line {
+      flex: 1; height: 1px;
+      background: rgba(184,115,51,0.18);
+    }
     @media (max-width: 480px) {
       .postonboard-enter { width: 100%; text-align: center; }
     }
@@ -740,47 +754,74 @@ function showPostOnboardingScreen(overlay, inner, sessionId, identity) {
       const cardsEl = document.createElement('div')
       cardsEl.className = 'postonboard-cards'
 
-      data.forEach(person => {
-        const card = document.createElement('div')
-        card.className = 'postonboard-card'
+      const TIERS = [
+        { key: 'learn', symbol: '+', label: 'LEARN FROM' },
+        { key: 'think', symbol: '=', label: 'THINK WITH' },
+        { key: 'share', symbol: '-', label: 'SHARE WITH' },
+      ]
+      const grouped = { learn: [], think: [], share: [] }
+      data.forEach((p, i) => {
+        const tier = (p.tier || '').toLowerCase()
+        const fallback = TIERS[i]?.key || 'learn'
+        const key = Object.prototype.hasOwnProperty.call(grouped, tier) ? tier : fallback
+        grouped[key].push(p)
+      })
 
-        const nameEl = document.createElement('div')
-        nameEl.className = 'postonboard-card-name'
-        nameEl.textContent = person.name || ''
+      TIERS.forEach(({ key, symbol, label }) => {
+        if (grouped[key].length === 0) return
+        const tierHeader = document.createElement('div')
+        tierHeader.className = 'postonboard-tier-header'
+        const tierText = document.createElement('span')
+        tierText.className = 'postonboard-tier-text'
+        tierText.textContent = symbol + ' ' + label
+        const tierLine = document.createElement('div')
+        tierLine.className = 'postonboard-tier-line'
+        tierHeader.appendChild(tierText)
+        tierHeader.appendChild(tierLine)
+        cardsEl.appendChild(tierHeader)
 
-        const roleEl = document.createElement('div')
-        roleEl.className = 'postonboard-card-role'
-        roleEl.textContent = person.role || ''
+        grouped[key].forEach(person => {
+          const card = document.createElement('div')
+          card.className = 'postonboard-card'
 
-        const reasonEl = document.createElement('div')
-        reasonEl.className = 'postonboard-card-reason'
-        reasonEl.textContent = person.reason || ''
+          const nameEl = document.createElement('div')
+          nameEl.className = 'postonboard-card-name'
+          nameEl.textContent = person.name || ''
 
-        const addBtn = document.createElement('button')
-        addBtn.className = 'postonboard-card-add'
-        addBtn.textContent = '+ Add to Orbit'
-        addBtn.addEventListener('click', () => {
-          queuedContacts.push({
-            id: crypto.randomUUID(),
-            name: person.name || '',
-            role: person.role || '',
-            why: person.reason || '',
-            url: person.url || '',
-            platform: 'Suggested',
-            status: 'IDENTIFIED',
-            date_added: new Date().toISOString().split('T')[0],
-            notes: '',
+          const roleEl = document.createElement('div')
+          roleEl.className = 'postonboard-card-role'
+          roleEl.textContent = person.role || ''
+
+          const reasonEl = document.createElement('div')
+          reasonEl.className = 'postonboard-card-reason'
+          reasonEl.textContent = person.reason || ''
+
+          const addBtn = document.createElement('button')
+          addBtn.className = 'postonboard-card-add'
+          addBtn.textContent = '+ Add to Orbit'
+          addBtn.addEventListener('click', () => {
+            queuedContacts.push({
+              id: crypto.randomUUID(),
+              name: person.name || '',
+              role: person.role || '',
+              why: person.reason || '',
+              url: person.url || '',
+              platform: 'Suggested',
+              status: 'IDENTIFIED',
+              date_added: new Date().toISOString().split('T')[0],
+              notes: '',
+            })
+            addBtn.textContent = 'Added'
+            addBtn.disabled = true
+            addBtn.classList.add('added')
           })
-          addBtn.textContent = 'Added'
-          addBtn.disabled = true
-          addBtn.classList.add('added')
-        })
 
-        card.appendChild(nameEl)
-        card.appendChild(roleEl)
-        card.appendChild(reasonEl)
-        card.appendChild(addBtn)
-        cardsEl.appendChild(card)
+          card.appendChild(nameEl)
+          card.appendChild(roleEl)
+          card.appendChild(reasonEl)
+          card.appendChild(addBtn)
+          cardsEl.appendChild(card)
+        })
       })
 
       inner.insertBefore(cardsEl, enterBtn)
@@ -802,7 +843,7 @@ function showPostOnboardingScreen(overlay, inner, sessionId, identity) {
               why: p.reason,
               url: p.url,
               platform: 'Suggested',
-              category: 'PRACTITIONER',
+              tier: p.tier || 'learn',
             })),
           },
           timestamp: now,

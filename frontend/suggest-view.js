@@ -1,8 +1,8 @@
 const SUGGEST_MESSAGES = [
   'Reading your gravity profile...',
-  'Finding Practitioners — people already doing what you want to build...',
-  'Finding Theorists — people who understand the underlying mechanics...',
-  'Finding Connectors — people who can bridge your work to the bigger moment...',
+  'Finding who you should learn from...',
+  'Finding thinking partners at your level...',
+  'Finding who would benefit from your perspective...',
   'Checking reachability...',
   'Almost there...',
 ]
@@ -153,13 +153,19 @@ function injectStyles() {
       border-bottom: 1px solid rgba(184,115,51,0.1);
     }
 
-    .suggest-category-header {
+    .suggest-tier-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 32px 0 12px;
+    }
+    .suggest-tier-header-text {
       font-family: 'Courier Prime', monospace;
       font-size: 11px; letter-spacing: 0.2em;
-      color: #b87333;
-      text-transform: uppercase;
-      padding: 32px 0 12px;
-      border-bottom: 1px solid rgba(184,115,51,0.18);
+      color: #b87333; text-transform: uppercase;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .suggest-tier-header-line {
+      flex: 1; height: 1px;
+      background: rgba(184,115,51,0.18);
     }
 
     @keyframes suggest-card-in {
@@ -421,6 +427,21 @@ function buildContactInfo(person) {
   return section
 }
 
+// ── Tier header builder ──────────────────────────────────────────────────────
+
+function buildTierHeader(symbol, label) {
+  const header = document.createElement('div')
+  header.className = 'suggest-tier-header'
+  const text = document.createElement('span')
+  text.className = 'suggest-tier-header-text'
+  text.textContent = symbol + ' ' + label
+  const line = document.createElement('div')
+  line.className = 'suggest-tier-header-line'
+  header.appendChild(text)
+  header.appendChild(line)
+  return header
+}
+
 // ── Card builder ─────────────────────────────────────────────────────────────
 
 function buildCard(person, searchHash) {
@@ -624,23 +645,24 @@ function init() {
 
     renderSynonyms(data.synonyms || [], resultsEl)
 
-    const CATS = ['PRACTITIONER', 'THEORIST', 'CONNECTOR']
-    const grouped = {}
-    CATS.forEach(c => { grouped[c] = [] })
-    people.forEach(p => {
-      const cat = (p.category || '').toUpperCase()
-      if (grouped[cat]) grouped[cat].push(p)
-      else grouped['PRACTITIONER'].push(p)
+    const TIERS = [
+      { key: 'learn', symbol: '+', label: 'LEARN FROM' },
+      { key: 'think', symbol: '=', label: 'THINK WITH' },
+      { key: 'share', symbol: '-', label: 'SHARE WITH' },
+    ]
+    const grouped = { learn: [], think: [], share: [] }
+    people.forEach((p, i) => {
+      const tier = (p.tier || '').toLowerCase()
+      const fallback = TIERS[i]?.key || 'learn'
+      const key = grouped[tier] !== undefined ? tier : fallback
+      grouped[key].push(p)
     })
 
     let cardIndex = 0
-    CATS.forEach(cat => {
-      if (grouped[cat].length === 0) return
-      const header = document.createElement('div')
-      header.className = 'suggest-category-header'
-      header.textContent = cat
-      resultsEl.appendChild(header)
-      grouped[cat].forEach(p => {
+    TIERS.forEach(({ key, symbol, label }) => {
+      if (grouped[key].length === 0) return
+      resultsEl.appendChild(buildTierHeader(symbol, label))
+      grouped[key].forEach(p => {
         const card = buildCard(p, data.search_hash)
         card.style.animationDelay = `${cardIndex * 60}ms`
         cardIndex++

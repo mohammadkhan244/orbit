@@ -122,13 +122,20 @@ Use extracted domain terms as web search queries: "[domain term] author", "[doma
 STEP 3 — FIND CONTACT INFO:
 For each person, search for their public email, LinkedIn URL (full https://linkedin.com/in/... URL), personal website, and any books they've written (title + publisher + year).
 
-Suggest 3 real, verifiable people based on the gravity profile. Use web search to confirm they exist and are active. Exclude anyone in the existing contacts list.
+Suggest exactly 3 real, verifiable people — one per tier:
+1. LEARN FROM (tier: "learn"): Established, published, further along. Worth following even if hard to reach directly.
+2. THINK WITH (tier: "think"): Active, reachable, at a similar stage. A peer working on adjacent problems right now.
+3. SHARE WITH (tier: "share"): Earlier in the journey. Emerging, would benefit from this perspective.
+
+Use web search to confirm they exist and are active. Exclude anyone in the existing contacts list.
+Return in order: learn first, think second, share third.
 
 Return ONLY a valid JSON array. No markdown, no prose, no preamble:
 [{
   "name": "...",
   "role": "...",
   "reason": "...",
+  "tier": "learn | think | share",
   "url": "...",
   "email": "",
   "linkedin": "",
@@ -138,6 +145,7 @@ Return ONLY a valid JSON array. No markdown, no prose, no preamble:
 }]
 
 reason must be one sentence referencing something specific in the gravity profile.
+tier must be exactly "learn", "think", or "share".
 email/linkedin/website/contact_note should be empty string if not found.
 books should be empty array [] if no books found.
 

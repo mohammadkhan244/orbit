@@ -75,22 +75,20 @@ For each person found, search for:
 - Books they have written (title, publisher, year — search "[name] book" or "[name] author")
 - If direct email unavailable: note the best reach-out path (speaking agency URL, contact form URL, etc.)
 
-Based strictly on the identity pack above, find 9 real verifiable people [USER_NAME] likely hasn't considered. Derive all searches from the exact domain terms extracted in Step 1 — do not use assumed interests.
+Based strictly on the identity pack above, find exactly 3 real verifiable people [USER_NAME] likely hasn't considered — one per tier:
 
-Return exactly 3 people per category:
+LEARN FROM (tier: "learn") — Established, published, further along. Worth following even if hard to reach directly. Assign to the person who is most senior or most published in the exact domain.
 
-PRACTITIONER — Someone actively doing what [USER_NAME] is trying to build, based on their mission. Direct execution experience. They have seen what breaks.
+THINK WITH (tier: "think") — Active, reachable, at a similar stage. A peer working on adjacent problems right now. Assign to the person most likely to respond to a cold message.
 
-THEORIST — Someone who has studied the underlying mechanics of what [USER_NAME] cares about. Academic or analytical depth in their specific domain.
-
-CONNECTOR — Someone who bridges [USER_NAME]'s work to a bigger cultural moment. Journalists, public intellectuals, or writers who can contextualize why their work matters right now.
+SHARE WITH (tier: "share") — Earlier in the journey. Emerging, would benefit from [USER_NAME]'s perspective. Assign to the person newest to the domain or at an earlier career stage.
 
 Rules:
 - Only return people who verifiably exist. Confirm name, role, and URL from web search.
 - The "why" field must name a specific overlap with the identity pack — a concrete project, essay, idea, or mission. Not generic.
 - Prioritize authors, researchers, practitioners genuinely active in the exact domains extracted in Step 1.
 
-Return exactly 9 people. JSON only. No markdown. No prose. No preamble. Start with { and end with }:
+Return exactly 3 people in order: learn first, think second, share third. JSON only. No markdown. No prose. No preamble. Start with { and end with }:
 {
   "people": [
     {
@@ -100,7 +98,7 @@ Return exactly 9 people. JSON only. No markdown. No prose. No preamble. Start wi
       "why": "",
       "url": "",
       "platform": "substack | linkedin | twitter | website",
-      "category": "PRACTITIONER | THEORIST | CONNECTOR",
+      "tier": "learn | think | share",
       "email": "",
       "linkedin": "",
       "website": "",

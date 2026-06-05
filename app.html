@@ -1153,6 +1153,20 @@
       font-size: 10px; color: rgba(240,236,228,0.2);
       font-style: italic; margin-top: 3px;
     }
+    .ol-suggest-tier-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 16px 6px;
+    }
+    .ol-suggest-tier-text {
+      font-family: 'Courier Prime', monospace;
+      font-size: 9px; letter-spacing: 0.18em;
+      color: #b87333; text-transform: uppercase;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .ol-suggest-tier-line {
+      flex: 1; height: 1px;
+      background: rgba(184,115,51,0.18);
+    }
 
     @media (max-width: 700px) {
       #orbit-list-panel {
@@ -2580,7 +2594,20 @@
           suggestSection.style.display = 'none'
           return
         }
-        suggestions.forEach(function(s) {
+        var TIERS = [
+          { key: 'learn', symbol: '+', label: 'LEARN FROM' },
+          { key: 'think', symbol: '=', label: 'THINK WITH' },
+          { key: 'share', symbol: '-', label: 'SHARE WITH' },
+        ]
+        var grouped = { learn: [], think: [], share: [] }
+        suggestions.forEach(function(s, i) {
+          var tier = (s.tier || '').toLowerCase()
+          var fallback = TIERS[i] ? TIERS[i].key : 'learn'
+          var key = Object.prototype.hasOwnProperty.call(grouped, tier) ? tier : fallback
+          grouped[key].push(s)
+        })
+
+        function buildSuggestCard(s) {
           var card = document.createElement('div')
           card.className = 'ol-suggest-card'
           var nameEl = document.createElement('div')
@@ -2593,7 +2620,6 @@
           reasonEl.className = 'ol-suggest-reason'
           reasonEl.textContent = s.reason || ''
 
-          // Contact info
           var hasEmail    = s.email    && s.email.trim()
           var hasLinkedIn = s.linkedin && s.linkedin.trim()
           var hasWebsite  = s.website  && s.website.trim()
@@ -2687,7 +2713,24 @@
             card.remove()
           })
           card.appendChild(addBtn)
-          suggestBody.appendChild(card)
+          return card
+        }
+
+        TIERS.forEach(function(t) {
+          if (grouped[t.key].length === 0) return
+          var tierHeader = document.createElement('div')
+          tierHeader.className = 'ol-suggest-tier-header'
+          var tierText = document.createElement('span')
+          tierText.className = 'ol-suggest-tier-text'
+          tierText.textContent = t.symbol + ' ' + t.label
+          var tierLine = document.createElement('div')
+          tierLine.className = 'ol-suggest-tier-line'
+          tierHeader.appendChild(tierText)
+          tierHeader.appendChild(tierLine)
+          suggestBody.appendChild(tierHeader)
+          grouped[t.key].forEach(function(s) {
+            suggestBody.appendChild(buildSuggestCard(s))
+          })
         })
         suggestSection.style.display = ''
       }
