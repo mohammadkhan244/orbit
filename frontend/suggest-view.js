@@ -687,7 +687,7 @@ function init() {
       const r = await fetch(`/api/results-kv?sessionId=${encodeURIComponent(sessionId)}&type=suggest`)
       if (r.ok) {
         const saved = await r.json()
-        if (saved && saved.results && Array.isArray(saved.results.people) && saved.results.people.length > 0) {
+        if (saved && saved.results && Array.isArray(saved.results.people) && saved.results.people.length > 0 && saved.results.people.length <= 3) {
           renderData(saved.results, saved)
           updateBtn(saved.timestamp)
         }
