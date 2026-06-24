@@ -2106,11 +2106,11 @@
 
           const cardHeader = document.createElement('div')
           cardHeader.className = 'admin-profile-card-header'
+          cardHeader.style.justifyContent = 'space-between'
 
           const cardName = document.createElement('div')
           cardName.className = 'admin-profile-card-name'
           cardName.textContent = p.name || '—'
-
           cardHeader.appendChild(cardName)
 
           const metaParts = []
@@ -2123,7 +2123,71 @@
             cardHeader.appendChild(cardMeta)
           }
 
+          // ✕ delete button — right side of card header
+          const cardDelBtn = document.createElement('button')
+          cardDelBtn.textContent = '✕'
+          cardDelBtn.title = 'Delete profile'
+          cardDelBtn.style.cssText = 'background:none;border:1px solid rgba(184,115,51,0.35);color:rgba(184,115,51,0.5);font-family:"Courier Prime",monospace;font-size:10px;min-width:28px;min-height:28px;width:28px;height:28px;cursor:pointer;padding:0;line-height:1;margin-left:auto;flex-shrink:0;transition:border-color 0.12s,color 0.12s;'
+          cardDelBtn.addEventListener('mouseover', () => { cardDelBtn.style.borderColor = '#b87333'; cardDelBtn.style.color = '#b87333' })
+          cardDelBtn.addEventListener('mouseout',  () => { cardDelBtn.style.borderColor = 'rgba(184,115,51,0.35)'; cardDelBtn.style.color = 'rgba(184,115,51,0.5)' })
+          cardHeader.appendChild(cardDelBtn)
+
           card.appendChild(cardHeader)
+
+          // Inline confirm row (hidden until ✕ clicked)
+          const cardDelConfirm = document.createElement('div')
+          cardDelConfirm.style.cssText = 'padding:10px 0 4px;display:none;'
+          const cardDelLabel = Object.assign(document.createElement('span'), { textContent: `Delete ${p.name || 'this profile'}? ` })
+          cardDelLabel.style.cssText = 'font-family:"Courier Prime",monospace;font-size:11px;color:rgba(240,236,228,0.55);margin-right:10px;'
+          const cardConfirmBtn = document.createElement('button')
+          cardConfirmBtn.textContent = 'Confirm'
+          cardConfirmBtn.style.cssText = 'background:#b87333;border:1px solid #b87333;color:#0a0a0a;font-family:"Courier Prime",monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;padding:5px 12px;cursor:pointer;margin-right:8px;'
+          const cardCancelBtn = document.createElement('button')
+          cardCancelBtn.textContent = 'Cancel'
+          cardCancelBtn.style.cssText = 'background:none;border:1px solid rgba(184,115,51,0.35);color:rgba(184,115,51,0.65);font-family:"Courier Prime",monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;padding:5px 12px;cursor:pointer;'
+          const cardStatusEl = document.createElement('span')
+          cardStatusEl.style.cssText = 'font-family:"DM Sans",sans-serif;font-size:11px;color:rgba(184,115,51,0.65);margin-left:8px;'
+          cardDelConfirm.appendChild(cardDelLabel)
+          cardDelConfirm.appendChild(cardConfirmBtn)
+          cardDelConfirm.appendChild(cardCancelBtn)
+          cardDelConfirm.appendChild(cardStatusEl)
+          card.appendChild(cardDelConfirm)
+
+          cardDelBtn.addEventListener('click', e => {
+            e.stopPropagation()
+            cardDelConfirm.style.display = 'block'
+            cardDelBtn.style.display = 'none'
+          })
+          cardConfirmBtn.addEventListener('click', async e => {
+            e.stopPropagation()
+            cardConfirmBtn.disabled = true
+            cardCancelBtn.disabled = true
+            cardStatusEl.textContent = 'Deleting…'
+            try {
+              const resp = await fetch(
+                `/api/identity?sessionId=${encodeURIComponent(p.sessionId)}&adminCode=${encodeURIComponent(code)}`,
+                { method: 'DELETE' }
+              )
+              if (resp.ok) {
+                card.remove()
+                const remaining = sec6.querySelectorAll('.admin-profile-card').length
+                profileCount.textContent = `${remaining} gravity profile${remaining === 1 ? '' : 's'}`
+              } else {
+                cardStatusEl.textContent = 'Failed — try again'
+                cardConfirmBtn.disabled = false
+                cardCancelBtn.disabled = false
+              }
+            } catch {
+              cardStatusEl.textContent = 'Failed — try again'
+              cardConfirmBtn.disabled = false
+              cardCancelBtn.disabled = false
+            }
+          })
+          cardCancelBtn.addEventListener('click', e => {
+            e.stopPropagation()
+            cardDelConfirm.style.display = 'none'
+            cardDelBtn.style.display = ''
+          })
 
           if (p.mission) {
             const cardMission = document.createElement('div')
