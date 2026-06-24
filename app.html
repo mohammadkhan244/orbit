@@ -1992,15 +1992,103 @@
         profilesLoadingEl.remove()
 
         // Section 3: Active Users table
+        let activeUserCount = profiles.length
+        const usersCountEl = document.createElement('div')
+        usersCountEl.className = 'admin-count'
+        usersCountEl.textContent = `${activeUserCount} user${activeUserCount === 1 ? '' : 's'}`
+        sec3.insertBefore(usersCountEl, usersWrap)
+
         const usersTable = document.createElement('table')
         usersTable.className = 'admin-table'
-        usersTable.innerHTML = '<thead><tr><th>Session</th><th>Name</th><th>Email</th><th>Mission</th><th>Joined</th></tr></thead>'
+        usersTable.innerHTML = '<thead><tr><th>Session</th><th>Name</th><th>Email</th><th>Mission</th><th>Joined</th><th></th></tr></thead>'
         const usersTbody = document.createElement('tbody')
         profiles.forEach(p => {
           const tr = document.createElement('tr')
           const missionText = p.mission ? (p.mission.length > 40 ? p.mission.slice(0, 40) + '…' : p.mission) : '—'
           const joined = p.created_at ? new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
-          tr.innerHTML = `<td>${(p.sessionId || '').slice(0, 8)}</td><td>${p.name || '—'}</td><td>${p.email || '—'}</td><td style="color:rgba(240,236,228,0.5)">${missionText}</td><td>${joined}</td>`
+
+          const tdSession = Object.assign(document.createElement('td'), { textContent: (p.sessionId || '').slice(0, 8) })
+          const tdName    = Object.assign(document.createElement('td'), { textContent: p.name || '—' })
+          const tdEmail   = Object.assign(document.createElement('td'), { textContent: p.email || '—' })
+          const tdMission = Object.assign(document.createElement('td'), { textContent: missionText })
+          tdMission.style.color = 'rgba(240,236,228,0.5)'
+          const tdJoined  = Object.assign(document.createElement('td'), { textContent: joined })
+          const tdDel     = document.createElement('td')
+          tdDel.style.cssText = 'text-align:right;width:48px;padding:4px 8px;'
+
+          const delBtn = document.createElement('button')
+          delBtn.textContent = '✕'
+          delBtn.title = 'Delete user'
+          delBtn.style.cssText = 'background:none;border:1px solid rgba(184,115,51,0.4);color:rgba(184,115,51,0.65);font-family:"Courier Prime",monospace;font-size:11px;min-width:36px;min-height:36px;width:36px;height:36px;cursor:pointer;padding:0;line-height:1;'
+          delBtn.addEventListener('mouseover', () => { delBtn.style.borderColor = '#b87333'; delBtn.style.color = '#b87333' })
+          delBtn.addEventListener('mouseout',  () => { delBtn.style.borderColor = 'rgba(184,115,51,0.4)'; delBtn.style.color = 'rgba(184,115,51,0.65)' })
+          tdDel.appendChild(delBtn)
+
+          function renderNormal() {
+            while (tr.firstChild) tr.removeChild(tr.firstChild)
+            tr.appendChild(tdSession)
+            tr.appendChild(tdName)
+            tr.appendChild(tdEmail)
+            tr.appendChild(tdMission)
+            tr.appendChild(tdJoined)
+            tr.appendChild(tdDel)
+          }
+
+          delBtn.addEventListener('click', () => {
+            while (tr.firstChild) tr.removeChild(tr.firstChild)
+            const tdConfirm = document.createElement('td')
+            tdConfirm.colSpan = 6
+            tdConfirm.style.cssText = 'padding:8px 0;'
+
+            const label = Object.assign(document.createElement('span'), { textContent: `Delete ${p.name || 'this user'}? ` })
+            label.style.cssText = 'font-family:"Courier Prime",monospace;font-size:11px;color:rgba(240,236,228,0.55);margin-right:10px;'
+
+            const confirmBtn = document.createElement('button')
+            confirmBtn.textContent = 'Confirm'
+            confirmBtn.style.cssText = 'background:#b87333;border:1px solid #b87333;color:#0a0a0a;font-family:"Courier Prime",monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;padding:5px 12px;cursor:pointer;margin-right:8px;'
+
+            const cancelBtn = document.createElement('button')
+            cancelBtn.textContent = 'Cancel'
+            cancelBtn.style.cssText = 'background:none;border:1px solid rgba(184,115,51,0.35);color:rgba(184,115,51,0.65);font-family:"Courier Prime",monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;padding:5px 12px;cursor:pointer;'
+
+            const statusEl = document.createElement('span')
+            statusEl.style.cssText = 'font-family:"DM Sans",sans-serif;font-size:11px;color:rgba(184,115,51,0.65);margin-left:10px;'
+
+            confirmBtn.addEventListener('click', async () => {
+              confirmBtn.disabled = true
+              cancelBtn.disabled = true
+              statusEl.textContent = 'Deleting…'
+              try {
+                const resp = await fetch(
+                  `/api/identity?sessionId=${encodeURIComponent(p.sessionId)}&adminCode=${encodeURIComponent(code)}`,
+                  { method: 'DELETE' }
+                )
+                if (resp.ok) {
+                  tr.remove()
+                  activeUserCount--
+                  usersCountEl.textContent = `${activeUserCount} user${activeUserCount === 1 ? '' : 's'}`
+                } else {
+                  statusEl.textContent = 'Failed — try again'
+                  confirmBtn.disabled = false
+                  cancelBtn.disabled = false
+                }
+              } catch {
+                statusEl.textContent = 'Failed — try again'
+                confirmBtn.disabled = false
+                cancelBtn.disabled = false
+              }
+            })
+
+            cancelBtn.addEventListener('click', renderNormal)
+
+            tdConfirm.appendChild(label)
+            tdConfirm.appendChild(confirmBtn)
+            tdConfirm.appendChild(cancelBtn)
+            tdConfirm.appendChild(statusEl)
+            tr.appendChild(tdConfirm)
+          })
+
+          renderNormal()
           usersTbody.appendChild(tr)
         })
         usersTable.appendChild(usersTbody)

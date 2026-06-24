@@ -183,54 +183,84 @@
       max-width: 480px;
     }
 
-    .hero-ctas {
+    .cta-block {
       display: flex;
-      align-items: center;
-      gap: 28px;
-      flex-wrap: wrap;
+      flex-direction: column;
+      gap: 20px;
+      max-width: 520px;
     }
 
-    .btn-primary {
+    .cta-row {
+      display: flex;
+      gap: 16px;
+    }
+
+    .btn-outline,
+    .btn-filled {
+      flex: 1;
+      height: 48px;
+      min-width: 200px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Courier Prime', monospace;
+      font-size: 14px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .btn-outline {
+      background: none;
+      border: 1px solid #b87333;
+      color: #b87333;
+    }
+    .btn-outline:hover { background: rgba(184,115,51,0.07); }
+
+    .btn-filled {
       background: #b87333;
       border: 1px solid #b87333;
       color: #0a0a0a;
+    }
+    .btn-filled:hover { background: #c8883c; border-color: #c8883c; }
+
+    .btn-text {
+      background: none;
+      border: none;
+      color: rgba(184,115,51,0.45);
       font-family: 'Courier Prime', monospace;
-      font-size: 11px;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      padding: 14px 32px;
+      font-size: 13px;
+      letter-spacing: 0.06em;
       cursor: pointer;
+      padding: 0;
       text-decoration: none;
       display: inline-block;
-      transition: background 0.15s ease;
-    }
-    .btn-primary:hover { background: #c8883c; border-color: #c8883c; }
-
-    .hero-signin {
-      font-family: 'Courier Prime', monospace;
-      font-size: 11px;
-      letter-spacing: 0.14em;
-      color: rgba(255,255,255,0.3);
-      text-decoration: none;
-      text-transform: uppercase;
       transition: color 0.15s ease;
     }
-    .hero-signin:hover { color: #b87333; }
+    .btn-text:hover { color: #b87333; }
 
-    @keyframes seats-blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.2; }
-    }
-    .seats-pulse {
-      animation: seats-blink 1.2s ease-in-out infinite;
-      display: inline-block;
-    }
-    #hero-seats {
+    .cta-full-msg {
       font-family: 'Courier Prime', monospace;
-      font-size: 12px; letter-spacing: 0.14em;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      color: rgba(240,236,228,0.22);
       text-transform: uppercase;
-      margin: 10px 0 0; text-align: center;
-      color: rgba(184,115,51,0.6);
+    }
+
+    .signin-inline {
+      max-width: 380px;
+    }
+
+    .waitlist-label {
+      font-family: 'Courier Prime', monospace;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      color: rgba(255,255,255,0.25);
+      text-transform: uppercase;
+      margin-bottom: 10px;
     }
 
     /* ── Pull quote ──────────────────────────────────────────────────────────── */
@@ -337,52 +367,12 @@
       margin-bottom: 40px;
     }
 
-    .login-cards {
+    .login-cta-block {
       display: flex;
+      flex-direction: column;
       gap: 20px;
+      max-width: 520px;
     }
-
-    .login-card {
-      flex: 1;
-      border: 1px solid rgba(184,115,51,0.15);
-      padding: 32px;
-      background: rgba(10,10,10,0.4);
-    }
-
-    .login-card-label {
-      font-family: 'Courier Prime', monospace;
-      font-size: 10px;
-      letter-spacing: 0.2em;
-      color: rgba(255,255,255,0.25);
-      text-transform: uppercase;
-      margin-bottom: 16px;
-    }
-
-    .login-card-body {
-      font-size: 14px;
-      font-weight: 300;
-      color: rgba(255,255,255,0.75);
-      line-height: 1.6;
-      margin-bottom: 24px;
-    }
-
-    .login-card-cta {
-      display: block;
-      width: 100%;
-      background: #b87333;
-      border: 1px solid #b87333;
-      color: #0a0a0a;
-      font-family: 'Courier Prime', monospace;
-      font-size: 11px;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      padding: 14px 20px;
-      cursor: pointer;
-      text-align: center;
-      text-decoration: none;
-      transition: background 0.15s ease;
-    }
-    .login-card-cta:hover { background: #c8883c; border-color: #c8883c; }
 
     .login-email-input {
       width: 100%;
@@ -453,8 +443,8 @@
       .inner { padding: 0 20px; }
       .section-dark { padding: 72px 0; }
       .section-alt { padding: 72px 0; }
-      .hero-ctas { gap: 20px; }
-      .login-cards { flex-direction: column; }
+      .cta-row { flex-direction: column; gap: 12px; }
+      .btn-outline, .btn-filled { min-width: 0; width: 100%; }
       .step-num { width: 48px; font-size: 2.25rem; }
     }
   </style>
@@ -472,7 +462,10 @@
       </svg>
       <span class="nav-wordmark">ORBIT</span>
     </a>
-    <a class="nav-cta" href="#login">Enter your orbit &rarr;</a>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <a class="nav-cta" id="nav-waitlist-btn" href="#login" style="display:none;">Get on the waitlist</a>
+      <a class="nav-cta" href="#login">Enter your orbit &rarr;</a>
+    </div>
   </nav>
 
   <!-- ── Hero ── -->
@@ -482,9 +475,18 @@
       <h1 class="hero-headline">Find the people obsessed with your problem</h1>
       <p class="hero-sub">ORBIT maps who you think like — not what industry you're in.</p>
       <p class="hero-tagline">The ones who'll change your trajectory aren't in your field.</p>
-      <div class="hero-ctas">
-        <a class="btn-primary" href="/orbit">Build your orbit</a>
-        <a class="hero-signin" href="/orbit?mode=spectator">Explore 10 demo orbits</a>
+      <div class="cta-block">
+        <div class="cta-row" id="hero-cta-row">
+          <a class="btn-outline" href="/orbit?mode=spectator">Explore 10 demo orbits</a>
+          <a class="btn-filled" href="/orbit" id="hero-create-btn">Create your own<span id="hero-seats-text"></span></a>
+        </div>
+        <div class="cta-full-msg" id="hero-full-msg" style="display:none;">Early access list full</div>
+        <button class="btn-text" id="hero-signin-btn">Sign into your orbit</button>
+        <div class="signin-inline" id="hero-signin-inline" style="display:none;">
+          <input class="login-email-input" id="hero-email" type="email" placeholder="you@example.com" autocomplete="email" />
+          <button class="login-submit" id="hero-submit">Find my orbit</button>
+          <div class="login-msg" id="hero-msg"></div>
+        </div>
       </div>
     </div>
   </section>
@@ -549,7 +551,6 @@
   <!-- ── Section 4: The Real Reason ── -->
   <section class="section-dark">
     <div class="inner">
-      <p class="real-reason-opener">(We said we'd get to the real reason.)</p>
       <div class="body-text">
         <p>We mistake having a network for being known.</p>
         <p>The connections accumulate, the inbox fills, and we tell ourselves we've found our people. But a contact who shares your industry doesn't share your obsession. They never metabolized the question you can't stop asking. They just happened to be standing near you.</p>
@@ -563,29 +564,26 @@
   <section class="section-alt" id="login">
     <div class="inner">
       <h2 class="login-headline">Ready to find your people?</h2>
-      <div class="login-cards">
-
-        <!-- New user -->
-        <div class="login-card">
-          <p class="login-card-label">First time here</p>
-          <p class="login-card-body">Start with your gravity profile. Takes 5 minutes.</p>
-          <a class="login-card-cta" href="/orbit">Build your gravity profile</a>
+      <div class="login-cta-block">
+        <div class="cta-row" id="login-cta-row">
+          <a class="btn-outline" href="/orbit?mode=spectator">Explore 10 demo orbits</a>
+          <a class="btn-filled" href="/orbit" id="login-create-btn">Create your own<span id="login-seats-text"></span></a>
         </div>
-
-        <!-- Returning user -->
-        <div class="login-card">
-          <p class="login-card-label">Welcome back</p>
-          <input
-            class="login-email-input"
-            id="login-email"
-            type="email"
-            placeholder="you@example.com"
-            autocomplete="email"
-          />
-          <button class="login-submit" id="login-submit">Enter your orbit</button>
+        <div class="cta-full-msg" id="login-full-msg" style="display:none;">Early access list full</div>
+        <div id="login-waitlist" style="display:none;">
+          <p class="waitlist-label">Join the early access list</p>
+          <div class="signin-inline">
+            <input class="login-email-input" id="waitlist-email" type="email" placeholder="you@example.com" autocomplete="email" />
+            <button class="login-submit" id="waitlist-submit">Notify me when spots open</button>
+            <div class="login-msg" id="waitlist-msg"></div>
+          </div>
+        </div>
+        <button class="btn-text" id="login-signin-btn">Sign into your orbit</button>
+        <div class="signin-inline" id="login-signin-inline" style="display:none;">
+          <input class="login-email-input" id="login-email" type="email" placeholder="you@example.com" autocomplete="email" />
+          <button class="login-submit" id="login-submit">Find my orbit</button>
           <div class="login-msg" id="login-msg"></div>
         </div>
-
       </div>
     </div>
   </section>
@@ -598,107 +596,154 @@
   </footer>
 
   <script>
-    // Check capacity on load — swap CTAs if ORBIT is full
     ;(function() {
+
+      // ── Email lookup ────────────────────────────────────────────────────────
+      function doLookup(emailEl, submitEl, msgEl) {
+        var email = emailEl.value.trim()
+        if (!email || !email.includes('@')) {
+          msgEl.className = 'login-msg'
+          msgEl.textContent = 'Please enter a valid email address.'
+          return
+        }
+        submitEl.disabled = true
+        submitEl.textContent = 'Searching…'
+        msgEl.className = 'login-msg'
+        msgEl.textContent = ''
+        fetch('/api/identity?action=lookup&email=' + encodeURIComponent(email))
+          .then(function(r) {
+            if (r.ok) {
+              return r.json().then(function(data) {
+                try { localStorage.setItem('orbit_session_id', data.sessionId) } catch {}
+                try { localStorage.setItem('orbit_identity', JSON.stringify(data.identity)) } catch {}
+                msgEl.className = 'login-msg ok'
+                msgEl.textContent = 'Found. Redirecting…'
+                setTimeout(function() { window.location.href = '/orbit' }, 500)
+              })
+            }
+            return r.json().then(function() {
+              msgEl.className = 'login-msg'
+              if (r.status === 404) {
+                msgEl.innerHTML = 'No orbit found for that email. <a href="/orbit">Want to create one?</a>'
+              } else {
+                msgEl.textContent = 'Something went wrong. Try again.'
+              }
+              submitEl.disabled = false
+              submitEl.textContent = 'Find my orbit'
+            })
+          })
+          .catch(function() {
+            msgEl.className = 'login-msg'
+            msgEl.textContent = 'Connection error. Try again.'
+            submitEl.disabled = false
+            submitEl.textContent = 'Find my orbit'
+          })
+      }
+
+      // ── Sign-in toggle helper ───────────────────────────────────────────────
+      function wireSignin(btnId, inlineId, emailId, submitId, msgId) {
+        var btn    = document.getElementById(btnId)
+        var inline = document.getElementById(inlineId)
+        var email  = document.getElementById(emailId)
+        var submit = document.getElementById(submitId)
+        var msg    = document.getElementById(msgId)
+        if (!btn || !inline || !email || !submit || !msg) return
+        btn.addEventListener('click', function() {
+          inline.style.display = 'block'
+          btn.style.display = 'none'
+          setTimeout(function() { email.focus() }, 30)
+        })
+        submit.addEventListener('click', function() { doLookup(email, submit, msg) })
+        email.addEventListener('keydown', function(e) { if (e.key === 'Enter') doLookup(email, submit, msg) })
+      }
+
+      wireSignin('hero-signin-btn',  'hero-signin-inline',  'hero-email',  'hero-submit',  'hero-msg')
+      wireSignin('login-signin-btn', 'login-signin-inline', 'login-email', 'login-submit', 'login-msg')
+
+      // ── Waitlist signup ─────────────────────────────────────────────────────
+      var waitlistSubmit = document.getElementById('waitlist-submit')
+      var waitlistEmail  = document.getElementById('waitlist-email')
+      var waitlistMsg    = document.getElementById('waitlist-msg')
+      function doWaitlist() {
+        var email = waitlistEmail.value.trim()
+        if (!email || !email.includes('@')) {
+          waitlistMsg.className = 'login-msg'
+          waitlistMsg.textContent = 'Please enter a valid email.'
+          return
+        }
+        waitlistSubmit.disabled = true
+        waitlistSubmit.textContent = 'Saving…'
+        waitlistMsg.textContent = ''
+        fetch('/api/guest-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email, waitlist: true })
+        })
+          .then(function(r) {
+            if (r.ok) {
+              waitlistMsg.className = 'login-msg ok'
+              waitlistMsg.textContent = "You\'re on the list. We\'ll let you know when spots open."
+              waitlistEmail.value = ''
+              waitlistSubmit.textContent = 'Done'
+            } else {
+              waitlistMsg.className = 'login-msg'
+              waitlistMsg.textContent = 'Something went wrong. Try again.'
+              waitlistSubmit.disabled = false
+              waitlistSubmit.textContent = 'Notify me when spots open'
+            }
+          })
+          .catch(function() {
+            waitlistMsg.className = 'login-msg'
+            waitlistMsg.textContent = 'Connection error. Try again.'
+            waitlistSubmit.disabled = false
+            waitlistSubmit.textContent = 'Notify me when spots open'
+          })
+      }
+      if (waitlistSubmit && waitlistEmail) {
+        waitlistSubmit.addEventListener('click', doWaitlist)
+        waitlistEmail.addEventListener('keydown', function(e) { if (e.key === 'Enter') doWaitlist() })
+      }
+
+      // ── Capacity check ──────────────────────────────────────────────────────
       fetch('/api/identity?checkCap=true')
         .then(function(r) { return r.ok ? r.json() : null })
         .then(function(data) {
           if (!data) return
-
-          // Show seats remaining below CTAs (active mode only)
           var seatsLeft = data.seatsRemaining
-          if (typeof seatsLeft === 'number' && seatsLeft > 0) {
-            var heroCtas = document.querySelector('.hero-ctas')
-            if (heroCtas) {
-              var seatsEl = document.createElement('p')
-              seatsEl.id = 'hero-seats'
-              var isUrgent = seatsLeft <= 3
-              if (isUrgent) {
-                seatsEl.style.color = '#b87333'
-                seatsEl.innerHTML = '<span class="seats-pulse">·</span> Only ' + seatsLeft + ' spot' + (seatsLeft === 1 ? '' : 's') + ' left'
-              } else {
-                seatsEl.textContent = seatsLeft + ' spots remaining in early access'
-              }
-              heroCtas.parentNode.insertBefore(seatsEl, heroCtas.nextSibling)
-            }
-          }
 
-          if (data.mode !== 'spectator') return
+          if (data.mode === 'spectator') {
+            // Hero: hide create button, show full message
+            var heroCreate = document.getElementById('hero-create-btn')
+            if (heroCreate) heroCreate.style.display = 'none'
+            var heroFull = document.getElementById('hero-full-msg')
+            if (heroFull) heroFull.style.display = 'block'
 
-          // Swap primary CTA
-          var primaryCta = document.querySelector('.btn-primary')
-          if (primaryCta) {
-            primaryCta.textContent = 'Explore 10 demo orbits'
-            primaryCta.href = '/orbit?mode=spectator'
-          }
+            // Bottom: hide create button, show full message + waitlist
+            var loginCreate = document.getElementById('login-create-btn')
+            if (loginCreate) loginCreate.style.display = 'none'
+            var loginFull = document.getElementById('login-full-msg')
+            if (loginFull) loginFull.style.display = 'block'
+            var loginWaitlist = document.getElementById('login-waitlist')
+            if (loginWaitlist) loginWaitlist.style.display = 'block'
 
-          // Swap nav CTA
-          var navCta = document.querySelector('.nav-cta')
-          if (navCta) {
-            navCta.textContent = 'Explore demo orbits →'
-            navCta.href = '/orbit?mode=spectator'
-          }
+            // Nav: swap CTA + show waitlist button
+            var navCta = document.querySelector('.nav-cta:not(#nav-waitlist-btn)')
+            if (navCta) { navCta.textContent = 'Explore demo orbits →'; navCta.href = '/orbit?mode=spectator' }
+            var navWaitlist = document.getElementById('nav-waitlist-btn')
+            if (navWaitlist) navWaitlist.style.display = 'inline-block'
 
-          // Swap first-time login card
-          var firstCard = document.querySelector('.login-card:first-child .login-card-cta')
-          if (firstCard) {
-            firstCard.textContent = 'Explore demo orbits'
-            firstCard.href = '/orbit?mode=spectator'
+          } else if (typeof seatsLeft === 'number') {
+            // Active: update seats text in both buttons
+            var seatsStr = ' · ' + seatsLeft + ' spot' + (seatsLeft === 1 ? '' : 's') + ' left'
+            var heroSeats = document.getElementById('hero-seats-text')
+            if (heroSeats) heroSeats.textContent = seatsStr
+            var loginSeats = document.getElementById('login-seats-text')
+            if (loginSeats) loginSeats.textContent = seatsStr
           }
-          var firstCardLabel = document.querySelector('.login-card:first-child .login-card-label')
-          if (firstCardLabel) firstCardLabel.textContent = 'Browsing only'
-          var firstCardBody = document.querySelector('.login-card:first-child .login-card-body')
-          if (firstCardBody) firstCardBody.textContent = 'ORBIT is at capacity. Browse 10 historical demo orbits, or join the early access list below.'
         })
         .catch(function() {})
+
     })()
-
-    var emailEl  = document.getElementById('login-email')
-    var submitEl = document.getElementById('login-submit')
-    var msgEl    = document.getElementById('login-msg')
-
-    function setMsg(text, ok, html) {
-      msgEl.className = 'login-msg' + (ok ? ' ok' : '')
-      if (html) { msgEl.innerHTML = html } else { msgEl.textContent = text }
-    }
-
-    async function doLookup() {
-      var email = emailEl.value.trim()
-      if (!email || !email.includes('@')) {
-        setMsg('Please enter a valid email address.')
-        return
-      }
-      submitEl.disabled = true
-      submitEl.textContent = 'Searching…'
-      setMsg('')
-
-      try {
-        var r = await fetch('/api/identity?action=lookup&email=' + encodeURIComponent(email))
-
-        if (r.ok) {
-          var data = await r.json()
-          try { localStorage.setItem('orbit_session_id', data.sessionId) } catch {}
-          try { localStorage.setItem('orbit_identity', JSON.stringify(data.identity)) } catch {}
-          setMsg('Found. Redirecting…', true)
-          setTimeout(function() { window.location.href = '/orbit' }, 500)
-          return
-        }
-
-        if (r.status === 404) {
-          setMsg('', false, 'No orbit found for that email. <a href="/orbit">Want to create one?</a>')
-        } else {
-          setMsg('Something went wrong. Try again.')
-        }
-      } catch {
-        setMsg('Connection error. Try again.')
-      }
-
-      submitEl.disabled = false
-      submitEl.textContent = 'Enter your orbit'
-    }
-
-    submitEl.addEventListener('click', doLookup)
-    emailEl.addEventListener('keydown', function(e) { if (e.key === 'Enter') doLookup() })
   </script>
 
 </body>

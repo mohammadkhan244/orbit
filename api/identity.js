@@ -11,7 +11,7 @@ const TTL = 90 * 24 * 60 * 60 // 90 days in seconds
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
   if (req.method === 'OPTIONS') return res.status(200).end()
 
@@ -146,6 +146,36 @@ export default async function handler(req, res) {
     } catch (err) {
       console.error('[identity] POST failed', err)
       return res.status(502).json({ error: 'KV unavailable', detail: err.message })
+    }
+  }
+
+  if (req.method === 'DELETE') {
+    const { sessionId, adminCode } = req.query
+    if (!sessionId) return res.status(400).json({ error: 'sessionId required' })
+    if (!adminCode || adminCode !== process.env.ORBIT_ADMIN_CODE) {
+      return res.status(401).json({ error: 'Unauthorized' })
+    }
+    try {
+      const identity = await kv.get(`orbit:identity:${sessionId}`)
+      const tokenKeys = await kv.keys(`orbit:tokens:${sessionId}:*`)
+      const deleteOps = [
+        kv.del(`orbit:identity:${sessionId}`),
+        kv.del(`orbit:tokens:summary:${sessionId}`),
+        kv.del(`orbit:suggest:results:${sessionId}`),
+        kv.del(`orbit:search:results:${sessionId}`),
+        kv.del(`orbit:suggest-orbit:results:${sessionId}`),
+        kv.del(`orbit:suggest:prompted:${sessionId}`),
+      ]
+      if (identity?.email) {
+        deleteOps.push(kv.del(`orbit:email:${identity.email.toLowerCase().trim()}`))
+      }
+      tokenKeys.forEach(k => deleteOps.push(kv.del(k)))
+      await Promise.all(deleteOps)
+      console.log('[admin] deleted session:', sessionId)
+      return res.status(200).json({ ok: true, deleted: sessionId })
+    } catch (err) {
+      console.error('[identity] DELETE failed', err)
+      return res.status(500).json({ error: 'Delete failed', detail: err.message })
     }
   }
 

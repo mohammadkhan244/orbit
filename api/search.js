@@ -25,7 +25,7 @@ const SEARCH_CONSTRAINT = '\n\nUse web search sparingly. Maximum 3 searches tota
 async function extractSynonyms(profileText) {
   try {
     const r = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 300,
       system: 'You are a vocabulary expander. Given a profile, extract 4-5 alternative terms or phrases that describe the same domain. Return ONLY a JSON array of strings. No markdown, no preamble. Example: ["narrative prototyping", "futures literacy", "scenario fiction", "speculative strategy"]',
       messages: [{ role: 'user', content: profileText }],
@@ -118,7 +118,7 @@ export default async function handler(req, res) {
 
   try {
     const response = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 1000,
       system: systemPrompt,
       tools: [{ type: 'web_search_20250305', name: 'web_search' }],
