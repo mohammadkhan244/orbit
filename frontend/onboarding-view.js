@@ -151,19 +151,6 @@ function injectStyles() {
       color: #b87333; margin-bottom: 32px;
     }
 
-    /* ── Post-onboarding pulse loader ── */
-    @keyframes ob-pulse {
-      0%, 100% { opacity: 0.15; transform: scaleX(0.3); }
-      50%       { opacity: 0.7;  transform: scaleX(1);   }
-    }
-    .postonboard-pulse {
-      height: 1px; background: #b87333;
-      transform-origin: left;
-      animation: ob-pulse 1.8s ease-in-out infinite;
-      margin: 28px 0;
-      width: 100%;
-    }
-
     /* ── Post-onboarding suggestions screen ── */
     .postonboard-heading {
       font-family: 'Courier Prime', monospace;
@@ -683,9 +670,6 @@ function showPostOnboardingScreen(overlay, inner, sessionId, identity) {
   sub.className = 'postonboard-sub'
   sub.textContent = 'Searching based on your gravity profile'
 
-  const pulseEl = document.createElement('div')
-  pulseEl.className = 'postonboard-pulse'
-
   const progressArea = document.createElement('div')
   progressArea.className = 'postonboard-progress'
 
@@ -715,7 +699,6 @@ function showPostOnboardingScreen(overlay, inner, sessionId, identity) {
   inner.appendChild(eyebrow)
   inner.appendChild(heading)
   inner.appendChild(sub)
-  inner.appendChild(pulseEl)
   inner.appendChild(progressArea)
   inner.appendChild(enterBtn)
 
@@ -767,7 +750,7 @@ function showPostOnboardingScreen(overlay, inner, sessionId, identity) {
     progressFill.style.width = '100%'
     setTimeout(() => {
       progressArea.remove()
-      pulseEl.remove()
+
       heading.textContent = 'People for your orbit'
       sub.textContent = 'Based on your gravity profile'
       eyebrow.textContent = '// Based on your gravity profile'

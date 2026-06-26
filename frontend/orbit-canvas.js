@@ -241,16 +241,39 @@ export class OrbitCanvas {
     }
 
     // ── nodes ──
+    // Pass 1: compute raw angles per ring
+    const MIN_SEP_DEG = 30
+    const ringNodes = {}
     for (const contact of this.contacts) {
       const stage = STAGES[contact.status]
       if (!stage) continue
-
-      const r        = RING_R[stage.ring]
+      const ring     = stage.ring
       const angleDeg = stableHash(contact.name + (contact.id ?? '')) % 360
-      const rad      = angleDeg * Math.PI / 180
-      const nx       = cx + r * Math.cos(rad)
-      const ny       = cy + r * Math.sin(rad)
-      const delay    = (stableHash(contact.name) % 20) * 0.15
+      if (!ringNodes[ring]) ringNodes[ring] = []
+      ringNodes[ring].push({ contact, angleDeg })
+    }
+
+    // Pass 2: collision avoidance — sort per ring, push overlapping nodes clockwise
+    for (const nodes of Object.values(ringNodes)) {
+      nodes.sort((a, b) => a.angleDeg - b.angleDeg)
+      for (let i = 1; i < nodes.length; i++) {
+        if (nodes[i].angleDeg - nodes[i - 1].angleDeg < MIN_SEP_DEG) {
+          nodes[i].angleDeg = nodes[i - 1].angleDeg + MIN_SEP_DEG
+        }
+      }
+    }
+
+    // Pass 3: render with adjusted angles
+    for (const nodes of Object.values(ringNodes)) {
+      for (const { contact, angleDeg } of nodes) {
+      const stage = STAGES[contact.status]
+      if (!stage) continue
+
+      const r     = RING_R[stage.ring]
+      const rad   = angleDeg * Math.PI / 180
+      const nx    = cx + r * Math.cos(rad)
+      const ny    = cy + r * Math.sin(rad)
+      const delay = (stableHash(contact.name) % 20) * 0.15
 
       const g = document.createElementNS(NS, 'g')
       g.style.cursor = 'pointer'
@@ -301,7 +324,8 @@ export class OrbitCanvas {
       }, { passive: false })
 
       svg.appendChild(g)
-    }
+      }  // end contact loop
+    }    // end ring loop
 
     this.container.appendChild(svg)
   }

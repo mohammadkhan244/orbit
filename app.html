@@ -971,6 +971,30 @@
     #orbit-list-toggle.ol-shifted { left: 260px; }
     #orbit-list-toggle:hover { background: rgba(184,115,51,0.08); border-color: #b87333; }
 
+    #orbit-list-hint {
+      position: fixed; top: 50%; left: 34px;
+      transform: translateY(-50%);
+      background: rgba(10,10,10,0.92);
+      border: 1px solid rgba(184,115,51,0.5);
+      color: #b87333;
+      font-family: 'Courier Prime', monospace;
+      font-size: 11px; letter-spacing: 0.09em;
+      padding: 7px 13px;
+      z-index: 10; white-space: nowrap;
+      cursor: pointer;
+      transition: opacity 0.3s ease;
+      display: none;
+    }
+    #orbit-list-hint::before {
+      content: '';
+      position: absolute; top: 50%; left: -6px;
+      transform: translateY(-50%);
+      width: 0; height: 0;
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+      border-right: 6px solid rgba(184,115,51,0.5);
+    }
+
     .ol-header {
       font-family: 'Courier Prime', monospace;
       font-size: 10px; letter-spacing: 0.22em;
@@ -2656,7 +2680,7 @@
 
       var toggle = document.createElement('button')
       toggle.id = 'orbit-list-toggle'
-      toggle.textContent = '→ List'
+      toggle.textContent = 'YOUR ORBIT ↓'
       document.body.appendChild(toggle)
 
       // ── Open / close ─────────────────────────────────────────────────────────
@@ -2665,10 +2689,39 @@
         isOpen = open
         panel.classList.toggle('ol-open', open)
         toggle.classList.toggle('ol-shifted', open)
-        toggle.textContent = open ? '← List' : '→ List'
+        toggle.textContent = open ? 'YOUR ORBIT ↑' : 'YOUR ORBIT ↓'
         if (open) renderList()
       }
       toggle.addEventListener('click', function() { setOpen(!isOpen) })
+
+      // ── One-time hint tooltip ─────────────────────────────────────────────────
+      var HINT_KEY = 'orbit_list_hint_seen'
+      if (!localStorage.getItem(HINT_KEY)) {
+        var hint = document.createElement('div')
+        hint.id = 'orbit-list-hint'
+        hint.textContent = 'Your people are here'
+        document.body.appendChild(hint)
+
+        var hintTimer = null
+        function dismissHint() {
+          clearTimeout(hintTimer)
+          hint.style.opacity = '0'
+          setTimeout(function() { hint.remove() }, 320)
+          try { localStorage.setItem(HINT_KEY, '1') } catch {}
+        }
+        hint.addEventListener('click', dismissHint)
+        toggle.addEventListener('click', dismissHint)
+
+        function maybeShowHint() {
+          if (localStorage.getItem(HINT_KEY)) return
+          var active = orbitView && orbitView.classList.contains('active')
+          if (active) {
+            hint.style.display = 'block'
+            hintTimer = setTimeout(dismissHint, 4000)
+          }
+        }
+        setTimeout(maybeShowHint, 1800)
+      }
 
       // ── Show only when orbit view is active ──────────────────────────────────
       var orbitView = document.getElementById('orbit-view')
