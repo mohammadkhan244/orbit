@@ -112,7 +112,10 @@ export default async function handler(req, res) {
     ? `\n\nSearch using ALL of the following terms, not just the literal query: ${synonyms.join(', ')}. The user may not know these terms themselves — that is why you must search them.`
     : ''
 
-  const systemPrompt = (SEARCH_SYSTEM_PROMPT + SEARCH_CONSTRAINT + synonymInjection + JSON_CONSTRAINT)
+  const storyContext = identityPack.story
+    ? `\n\nAdditional context about this person:\n${identityPack.story}\n\nUse this to further refine your results.`
+    : ''
+  const systemPrompt = (SEARCH_SYSTEM_PROMPT + SEARCH_CONSTRAINT + synonymInjection + storyContext + JSON_CONSTRAINT)
     .replace('[USER_NAME]', slimIdentity.name || 'the user')
     .replace('[IDENTITY_PACK]', JSON.stringify(slimIdentity))
     .replace('[EWS_STORY]', slimIdentity.ews_story)

@@ -75,7 +75,10 @@ export default async function handler(req, res) {
     const { sessionId, identity, sendWelcome, sendUpdate } = req.body ?? {}
     if (!sessionId || !identity) return res.status(400).json({ error: 'sessionId and identity required' })
     try {
-      await kv.set(`orbit:identity:${sessionId}`, identity, { ex: TTL })
+      const savedIdentity = Object.assign({}, identity, {
+        story: identity.story && identity.story.trim() ? identity.story.trim() : null,
+      })
+      await kv.set(`orbit:identity:${sessionId}`, savedIdentity, { ex: TTL })
 
       if (identity.email && identity.email.includes('@')) {
         await kv.set(

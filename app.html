@@ -1397,6 +1397,7 @@
       var FIELDS = [
         { key: 'name',        label: 'Name',                                               placeholder: 'First and last name',                        type: 'input'    },
         { key: 'mission',     label: 'What are you working on?',                           placeholder: '2–3 sentences.',                              type: 'textarea' },
+        { key: 'story',       label: 'Your Story (Optional)',                              placeholder: 'A paragraph or two from your EWS profile — your origin story, inflection point, or what drives your work.', type: 'textarea', rows: 6, ewsLink: true, helper: 'Paste from your EWS profile. This is only used to improve your suggestions.' },
         { key: 'north_stars', label: 'What do you want to be known for?',                 placeholder: 'The work, the idea, the reputation.',          type: 'input'    },
         { key: 'worldview',   label: 'What kind of thinking partner are you looking for?', placeholder: 'Someone who can challenge, co-think, build.',  type: 'textarea' },
         { key: 'email',       label: 'Your email (optional)',                              placeholder: 'For saving your orbit across devices',         type: 'email'    },
@@ -1417,7 +1418,7 @@
           : document.createElement('input')
         input.className = f.type === 'textarea' ? 'gp-textarea' : 'gp-input'
         input.placeholder = f.placeholder
-        if (f.type === 'textarea') input.rows = 3
+        if (f.type === 'textarea') input.rows = f.rows || 3
         if (f.type === 'email') input.type = 'email'
         if (f.key === 'north_stars') {
           var ns = identity.north_stars
@@ -1428,7 +1429,24 @@
         if (isAdmin && sessionId !== 'admin') input.readOnly = true
         inputs[f.key] = input
         fieldEl.appendChild(label)
+        if (f.ewsLink) {
+          var ewsA = document.createElement('a')
+          ewsA.href = 'https://early-warning-system-kappa.vercel.app/'
+          ewsA.target = '_blank'
+          ewsA.rel = 'noopener noreferrer'
+          ewsA.textContent = 'Open EWS →'
+          ewsA.style.cssText = 'display:block;color:rgba(184,115,51,0.55);font-family:"Courier Prime",monospace;font-size:11px;text-decoration:none;letter-spacing:0.05em;margin-bottom:6px;'
+          ewsA.addEventListener('mouseover', function() { ewsA.style.color = '#b87333'; ewsA.style.textDecoration = 'underline' })
+          ewsA.addEventListener('mouseout', function() { ewsA.style.color = 'rgba(184,115,51,0.55)'; ewsA.style.textDecoration = 'none' })
+          fieldEl.appendChild(ewsA)
+        }
         fieldEl.appendChild(input)
+        if (f.helper) {
+          var helperEl = document.createElement('div')
+          helperEl.style.cssText = 'font-family:"DM Sans",sans-serif;font-size:11px;color:rgba(240,236,228,0.28);margin-top:6px;'
+          helperEl.textContent = f.helper
+          fieldEl.appendChild(helperEl)
+        }
         inner.appendChild(fieldEl)
       })
 
@@ -1454,6 +1472,7 @@
             name: name, mission: mission,
             north_stars: northRaw ? [northRaw] : [],
             worldview: inputs.worldview.value.trim(),
+            story: inputs.story.value.trim() || null,
             email: newEmail,
           })
           var emailChanged = newEmail && newEmail !== (identity.email || '')

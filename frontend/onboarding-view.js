@@ -560,6 +560,7 @@ function buildForm() {
   const FIELDS = [
     { key: 'name',        label: 'Your Name',                                           placeholder: 'First and last name',                                               type: 'input'    },
     { key: 'mission',     label: 'What are you working on?',                            placeholder: '2–3 sentences. What is the thing?',                                  type: 'textarea' },
+    { key: 'story',       label: 'Your Story (Optional)',                               placeholder: 'A paragraph or two from your EWS profile — your origin story, inflection point, or what drives your work.', type: 'textarea', rows: 6, ewsLink: true, helper: 'Paste from your EWS profile. This is only used to improve your suggestions.' },
     { key: 'north_stars', label: 'What do you want to be known for?',                  placeholder: 'The work, the idea, the reputation.',                                type: 'input'    },
     { key: 'worldview',   label: 'What kind of thinking partner are you looking for?',  placeholder: 'Someone who can challenge assumptions, co-think, build alongside.',   type: 'textarea' },
     { key: 'email',       label: 'Your email (optional)',                               placeholder: 'For saving your orbit across devices',                               type: 'email'    },
@@ -590,12 +591,29 @@ function buildForm() {
       : document.createElement('input')
     input.className = f.type === 'textarea' ? 'onboarding-textarea' : 'onboarding-input'
     input.placeholder = f.placeholder
-    if (f.type === 'textarea') input.rows = 3
+    if (f.type === 'textarea') input.rows = f.rows || 3
     if (f.type === 'email') input.type = 'email'
 
     inputs[f.key] = input
     fieldEl.appendChild(label)
+    if (f.ewsLink) {
+      const ewsA = document.createElement('a')
+      ewsA.href = 'https://early-warning-system-kappa.vercel.app/'
+      ewsA.target = '_blank'
+      ewsA.rel = 'noopener noreferrer'
+      ewsA.textContent = 'Open EWS →'
+      ewsA.style.cssText = 'display:block;color:rgba(184,115,51,0.55);font-family:"Courier Prime",monospace;font-size:11px;text-decoration:none;letter-spacing:0.05em;margin-bottom:6px;'
+      ewsA.addEventListener('mouseover', () => { ewsA.style.color = '#b87333'; ewsA.style.textDecoration = 'underline' })
+      ewsA.addEventListener('mouseout',  () => { ewsA.style.color = 'rgba(184,115,51,0.55)'; ewsA.style.textDecoration = 'none' })
+      fieldEl.appendChild(ewsA)
+    }
     fieldEl.appendChild(input)
+    if (f.helper) {
+      const helperEl = document.createElement('div')
+      helperEl.style.cssText = 'font-family:"DM Sans",sans-serif;font-size:11px;color:rgba(240,236,228,0.28);margin-top:6px;'
+      helperEl.textContent = f.helper
+      fieldEl.appendChild(helperEl)
+    }
     inner.appendChild(fieldEl)
   })
 
@@ -629,6 +647,7 @@ function buildForm() {
       north_stars: inputs.north_stars.value.trim() ? [inputs.north_stars.value.trim()] : [],
       interests:   [],
       worldview:   inputs.worldview.value.trim(),
+      story:       inputs.story.value.trim() || null,
       email:       inputs.email.value.trim(),
       voice:       '',
       ews_story:   '',
@@ -892,7 +911,6 @@ function showPostOnboardingScreen(overlay, inner, sessionId, identity) {
   .catch(() => {
     clearInterval(timer)
     progressArea.remove()
-    pulseEl.remove()
     heading.textContent = 'People for your orbit'
 
     const errEl = document.createElement('div')

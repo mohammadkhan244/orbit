@@ -225,7 +225,10 @@ ${JSON.stringify(gravityProfile)}${exclusionStr}${SEARCH_CONSTRAINT}`
     ? `\n\nSearch using ALL of the following terms, not just the literal profile text: ${synonyms.join(', ')}. The user may not know these terms themselves — that is why you must search them.`
     : ''
 
-  const systemPrompt = (SUGGEST_SYSTEM_PROMPT + SEARCH_CONSTRAINT + synonymInjection)
+  const storyContext = identityPack.story
+    ? `\n\nAdditional context about this person:\n${identityPack.story}\n\nUse this to further refine your results.`
+    : ''
+  const systemPrompt = (SUGGEST_SYSTEM_PROMPT + SEARCH_CONSTRAINT + synonymInjection + storyContext)
     .replace('[USER_NAME]', slimIdentity.name || 'the user')
     .replace('[IDENTITY_PACK]', JSON.stringify(slimIdentity))
     .replace('[EWS_STORY]', slimIdentity.ews_story)
