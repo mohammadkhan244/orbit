@@ -151,6 +151,19 @@ function injectStyles() {
       color: #b87333; margin-bottom: 32px;
     }
 
+    /* ── Post-onboarding pulse loader ── */
+    @keyframes ob-pulse {
+      0%, 100% { opacity: 0.15; transform: scaleX(0.3); }
+      50%       { opacity: 0.7;  transform: scaleX(1);   }
+    }
+    .postonboard-pulse {
+      height: 1px; background: #b87333;
+      transform-origin: left;
+      animation: ob-pulse 1.8s ease-in-out infinite;
+      margin: 28px 0;
+      width: 100%;
+    }
+
     /* ── Post-onboarding suggestions screen ── */
     .postonboard-heading {
       font-family: 'Courier Prime', monospace;
@@ -664,11 +677,14 @@ function showPostOnboardingScreen(overlay, inner, sessionId, identity) {
 
   const heading = document.createElement('div')
   heading.className = 'postonboard-heading'
-  heading.textContent = 'People for your orbit'
+  heading.textContent = 'Finding your people...'
 
   const sub = document.createElement('div')
   sub.className = 'postonboard-sub'
-  sub.textContent = 'Based on your gravity profile'
+  sub.textContent = 'Searching based on your gravity profile'
+
+  const pulseEl = document.createElement('div')
+  pulseEl.className = 'postonboard-pulse'
 
   const progressArea = document.createElement('div')
   progressArea.className = 'postonboard-progress'
@@ -699,6 +715,7 @@ function showPostOnboardingScreen(overlay, inner, sessionId, identity) {
   inner.appendChild(eyebrow)
   inner.appendChild(heading)
   inner.appendChild(sub)
+  inner.appendChild(pulseEl)
   inner.appendChild(progressArea)
   inner.appendChild(enterBtn)
 
@@ -750,6 +767,10 @@ function showPostOnboardingScreen(overlay, inner, sessionId, identity) {
     progressFill.style.width = '100%'
     setTimeout(() => {
       progressArea.remove()
+      pulseEl.remove()
+      heading.textContent = 'People for your orbit'
+      sub.textContent = 'Based on your gravity profile'
+      eyebrow.textContent = '// Based on your gravity profile'
 
       const cardsEl = document.createElement('div')
       cardsEl.className = 'postonboard-cards'
@@ -796,6 +817,42 @@ function showPostOnboardingScreen(overlay, inner, sessionId, identity) {
           reasonEl.className = 'postonboard-card-reason'
           reasonEl.textContent = person.reason || ''
 
+          // Inline links: View · LinkedIn · Website
+          const linkDefs = [
+            { label: 'View',     href: person.url      },
+            { label: 'LinkedIn', href: person.linkedin  },
+            { label: 'Website',  href: person.website   },
+          ].filter(d => d.href && d.href.trim())
+          if (linkDefs.length > 0) {
+            const linksRow = document.createElement('div')
+            linksRow.style.cssText = 'margin-bottom:12px;'
+            linkDefs.forEach((d, i) => {
+              if (i > 0) {
+                const sep = document.createElement('span')
+                sep.textContent = ' · '
+                sep.style.cssText = 'color:rgba(240,236,228,0.22);font-size:12px;'
+                linksRow.appendChild(sep)
+              }
+              const a = document.createElement('a')
+              a.href = d.href.trim()
+              a.textContent = d.label
+              a.target = '_blank'
+              a.rel = 'noopener noreferrer'
+              a.style.cssText = 'color:rgba(184,115,51,0.7);font-family:"Courier Prime",monospace;font-size:12px;text-decoration:none;letter-spacing:0.05em;'
+              a.addEventListener('mouseover', () => { a.style.color = '#b87333'; a.style.textDecoration = 'underline' })
+              a.addEventListener('mouseout',  () => { a.style.color = 'rgba(184,115,51,0.7)'; a.style.textDecoration = 'none' })
+              linksRow.appendChild(a)
+            })
+            card.appendChild(nameEl)
+            card.appendChild(roleEl)
+            card.appendChild(reasonEl)
+            card.appendChild(linksRow)
+          } else {
+            card.appendChild(nameEl)
+            card.appendChild(roleEl)
+            card.appendChild(reasonEl)
+          }
+
           const addBtn = document.createElement('button')
           addBtn.className = 'postonboard-card-add'
           addBtn.textContent = '+ Add to Orbit'
@@ -816,9 +873,6 @@ function showPostOnboardingScreen(overlay, inner, sessionId, identity) {
             addBtn.classList.add('added')
           })
 
-          card.appendChild(nameEl)
-          card.appendChild(roleEl)
-          card.appendChild(reasonEl)
           card.appendChild(addBtn)
           cardsEl.appendChild(card)
         })
@@ -855,10 +909,12 @@ function showPostOnboardingScreen(overlay, inner, sessionId, identity) {
   .catch(() => {
     clearInterval(timer)
     progressArea.remove()
+    pulseEl.remove()
+    heading.textContent = 'People for your orbit'
 
     const errEl = document.createElement('div')
     errEl.className = 'postonboard-error'
-    errEl.textContent = "Couldn't find suggestions right now"
+    errEl.textContent = "Couldn't load suggestions right now."
     inner.insertBefore(errEl, enterBtn)
     enterBtn.hidden = false
   })

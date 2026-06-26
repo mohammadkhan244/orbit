@@ -22,6 +22,8 @@ function hashStr(str) {
 
 const SEARCH_CONSTRAINT = '\n\nUse web search sparingly. Maximum 3 searches total. Do not search more than necessary to verify a person is real.'
 
+const JSON_CONSTRAINT = '\n\nReturn ONLY a valid JSON object. No markdown, no backticks, no prose before or after. Every string value must escape any quotes, newlines, or special characters inside it. If you cannot fit all fields, omit optional fields rather than truncating mid-value.'
+
 async function extractSynonyms(profileText) {
   try {
     const r = await client.messages.create({
@@ -110,7 +112,7 @@ export default async function handler(req, res) {
     ? `\n\nSearch using ALL of the following terms, not just the literal query: ${synonyms.join(', ')}. The user may not know these terms themselves — that is why you must search them.`
     : ''
 
-  const systemPrompt = (SEARCH_SYSTEM_PROMPT + SEARCH_CONSTRAINT + synonymInjection)
+  const systemPrompt = (SEARCH_SYSTEM_PROMPT + SEARCH_CONSTRAINT + synonymInjection + JSON_CONSTRAINT)
     .replace('[USER_NAME]', slimIdentity.name || 'the user')
     .replace('[IDENTITY_PACK]', JSON.stringify(slimIdentity))
     .replace('[EWS_STORY]', slimIdentity.ews_story)
@@ -119,7 +121,7 @@ export default async function handler(req, res) {
   try {
     const response = await client.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 1000,
+      max_tokens: 2000,
       system: systemPrompt,
       tools: [{ type: 'web_search_20250305', name: 'web_search' }],
       messages: [{ role: 'user', content: 'Search and return results as instructed.' }],
@@ -136,8 +138,16 @@ export default async function handler(req, res) {
     } catch {
       const start = raw.indexOf('{')
       const end = raw.lastIndexOf('}')
-      if (start === -1 || end === -1) throw new Error('No JSON found in response')
-      parsed = JSON.parse(raw.slice(start, end + 1))
+      if (start === -1 || end === -1) {
+        console.error('[search] no JSON object found in response. raw:', raw.slice(0, 500))
+        return res.status(500).json({ error: 'Results came back malformed. Try again.' })
+      }
+      try {
+        parsed = JSON.parse(raw.slice(start, end + 1))
+      } catch {
+        console.error('[search] JSON parse failed after extraction. raw:', raw.slice(0, 500))
+        return res.status(500).json({ error: 'Results came back malformed. Try again.' })
+      }
     }
     parsed.people?.forEach(p => { p.id = crypto.randomUUID() })
 
@@ -154,6 +164,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ ...parsed, search_hash, synonyms })
   } catch (err) {
     console.error('[search]', err)
-    return res.status(500).json({ error: 'Search failed', detail: err.message })
+    return res.status(500).json({ error: 'Search failed. Try again.' })
   }
 }

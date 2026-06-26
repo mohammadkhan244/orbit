@@ -340,30 +340,54 @@ function renderSynonyms(synonyms, container) {
   container.appendChild(bar)
 }
 
-// ── Contact info section ─────────────────────────────────────────────────────
+// ── Inline links (View · LinkedIn · Website) ─────────────────────────────────
+
+function buildInlineLinks(person) {
+  const defs = [
+    { label: 'View',     href: person.url      },
+    { label: 'LinkedIn', href: person.linkedin  },
+    { label: 'Website',  href: person.website   },
+  ].filter(d => d.href && d.href.trim())
+  if (defs.length === 0) return null
+
+  const row = document.createElement('div')
+  row.style.cssText = 'margin-bottom:14px;'
+  defs.forEach((d, i) => {
+    if (i > 0) {
+      const sep = document.createElement('span')
+      sep.textContent = ' · '
+      sep.style.cssText = 'color:rgba(240,236,228,0.22);font-size:12px;'
+      row.appendChild(sep)
+    }
+    const a = document.createElement('a')
+    a.href = d.href.trim()
+    a.textContent = d.label
+    a.target = '_blank'
+    a.rel = 'noopener noreferrer'
+    a.style.cssText = 'color:rgba(184,115,51,0.7);font-family:"Courier Prime",monospace;font-size:12px;text-decoration:none;letter-spacing:0.05em;transition:color 0.12s;'
+    a.addEventListener('mouseover', () => { a.style.color = '#b87333'; a.style.textDecoration = 'underline' })
+    a.addEventListener('mouseout',  () => { a.style.color = 'rgba(184,115,51,0.7)'; a.style.textDecoration = 'none' })
+    row.appendChild(a)
+  })
+  return row
+}
+
+// ── Contact info section (email, books, note only — links shown inline above) ──
 
 function buildContactInfo(person) {
+  const hasEmail = person.email && person.email.trim()
+  const hasBooks = Array.isArray(person.books) && person.books.length > 0
+  const note     = (person.contact_note || person.reachability_notes || '').trim()
+
+  if (!hasEmail && !hasBooks && !note) return null
+
   const section = document.createElement('div')
   section.className = 'card-contact'
 
   const label = document.createElement('div')
   label.className = 'card-contact-label'
-  label.textContent = 'Contact Info'
+  label.textContent = 'Contact'
   section.appendChild(label)
-
-  const hasEmail    = person.email    && person.email.trim()
-  const hasLinkedIn = person.linkedin && person.linkedin.trim()
-  const hasWebsite  = person.website  && person.website.trim()
-  const hasBooks    = Array.isArray(person.books) && person.books.length > 0
-  const note        = (person.contact_note || person.reachability_notes || '').trim()
-
-  if (!hasEmail && !hasLinkedIn && !hasWebsite && !hasBooks && !note) {
-    const none = document.createElement('div')
-    none.className = 'card-contact-none'
-    none.textContent = 'No public contact info found'
-    section.appendChild(none)
-    return section
-  }
 
   if (hasEmail) {
     const row = document.createElement('div')
@@ -374,32 +398,6 @@ function buildContactInfo(person) {
     a.textContent = person.email.trim()
     a.target = '_blank'; a.rel = 'noopener noreferrer'
     row.appendChild(document.createTextNode('Email: '))
-    row.appendChild(a)
-    section.appendChild(row)
-  }
-
-  if (hasLinkedIn) {
-    const row = document.createElement('div')
-    row.className = 'card-contact-row'
-    const a = document.createElement('a')
-    a.className = 'card-contact-link'
-    a.href = person.linkedin.trim()
-    a.textContent = 'LinkedIn'
-    a.target = '_blank'; a.rel = 'noopener noreferrer'
-    row.appendChild(document.createTextNode('LinkedIn: '))
-    row.appendChild(a)
-    section.appendChild(row)
-  }
-
-  if (hasWebsite) {
-    const row = document.createElement('div')
-    row.className = 'card-contact-row'
-    const a = document.createElement('a')
-    a.className = 'card-contact-link'
-    a.href = person.website.trim()
-    a.textContent = person.website.trim()
-    a.target = '_blank'; a.rel = 'noopener noreferrer'
-    row.appendChild(document.createTextNode('Website: '))
     row.appendChild(a)
     section.appendChild(row)
   }
@@ -470,16 +468,6 @@ function buildCard(person, searchHash) {
   why.className = 'card-why'
   why.textContent = person.why
 
-  const footer = document.createElement('div')
-  footer.className = 'card-footer'
-
-  const link = document.createElement('a')
-  link.className = 'card-link'
-  link.href = person.url
-  link.textContent = person.url
-  link.target = '_blank'
-  link.rel = 'noopener noreferrer'
-
   const addBtn = document.createElement('button')
   addBtn.className = 'card-add-btn'
   addBtn.textContent = '+ Add to ORBIT'
@@ -512,14 +500,14 @@ function buildCard(person, searchHash) {
     addBtn.disabled = true
   })
 
-  footer.appendChild(link)
-  footer.appendChild(addBtn)
-
   card.appendChild(header)
   card.appendChild(role)
   card.appendChild(why)
-  card.appendChild(buildContactInfo(person))
-  card.appendChild(footer)
+  const linksEl = buildInlineLinks(person)
+  if (linksEl) card.appendChild(linksEl)
+  card.appendChild(addBtn)
+  const contactInfo = buildContactInfo(person)
+  if (contactInfo) card.appendChild(contactInfo)
 
   return card
 }

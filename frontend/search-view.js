@@ -358,30 +358,54 @@ function renderSynonyms(synonyms, container) {
   container.appendChild(bar)
 }
 
-// ── Contact info section ─────────────────────────────────────────────────────
+// ── Inline links (View · LinkedIn · Website) ─────────────────────────────────
+
+function buildInlineLinks(person) {
+  const defs = [
+    { label: 'View',     href: person.url      },
+    { label: 'LinkedIn', href: person.linkedin  },
+    { label: 'Website',  href: person.website   },
+  ].filter(d => d.href && d.href.trim())
+  if (defs.length === 0) return null
+
+  const row = document.createElement('div')
+  row.style.cssText = 'margin-bottom:14px;'
+  defs.forEach((d, i) => {
+    if (i > 0) {
+      const sep = document.createElement('span')
+      sep.textContent = ' · '
+      sep.style.cssText = 'color:rgba(240,236,228,0.22);font-size:12px;'
+      row.appendChild(sep)
+    }
+    const a = document.createElement('a')
+    a.href = d.href.trim()
+    a.textContent = d.label
+    a.target = '_blank'
+    a.rel = 'noopener noreferrer'
+    a.style.cssText = 'color:rgba(184,115,51,0.7);font-family:"Courier Prime",monospace;font-size:12px;text-decoration:none;letter-spacing:0.05em;transition:color 0.12s;'
+    a.addEventListener('mouseover', () => { a.style.color = '#b87333'; a.style.textDecoration = 'underline' })
+    a.addEventListener('mouseout',  () => { a.style.color = 'rgba(184,115,51,0.7)'; a.style.textDecoration = 'none' })
+    row.appendChild(a)
+  })
+  return row
+}
+
+// ── Contact info section (email, books, note only — links shown inline above) ──
 
 function buildContactInfo(person) {
+  const hasEmail = person.email && person.email.trim()
+  const hasBooks = Array.isArray(person.books) && person.books.length > 0
+  const note     = (person.contact_note || person.reachability_notes || '').trim()
+
+  if (!hasEmail && !hasBooks && !note) return null
+
   const section = document.createElement('div')
   section.className = 'card-contact'
 
   const label = document.createElement('div')
   label.className = 'card-contact-label'
-  label.textContent = 'Contact Info'
+  label.textContent = 'Contact'
   section.appendChild(label)
-
-  const hasEmail   = person.email    && person.email.trim()
-  const hasLinkedIn = person.linkedin && person.linkedin.trim()
-  const hasWebsite = person.website  && person.website.trim()
-  const hasBooks   = Array.isArray(person.books) && person.books.length > 0
-  const note       = (person.contact_note || person.reachability_notes || '').trim()
-
-  if (!hasEmail && !hasLinkedIn && !hasWebsite && !hasBooks && !note) {
-    const none = document.createElement('div')
-    none.className = 'card-contact-none'
-    none.textContent = 'No public contact info found'
-    section.appendChild(none)
-    return section
-  }
 
   if (hasEmail) {
     const row = document.createElement('div')
@@ -392,32 +416,6 @@ function buildContactInfo(person) {
     a.textContent = person.email.trim()
     a.target = '_blank'; a.rel = 'noopener noreferrer'
     row.appendChild(document.createTextNode('Email: '))
-    row.appendChild(a)
-    section.appendChild(row)
-  }
-
-  if (hasLinkedIn) {
-    const row = document.createElement('div')
-    row.className = 'card-contact-row'
-    const a = document.createElement('a')
-    a.className = 'card-contact-link'
-    a.href = person.linkedin.trim()
-    a.textContent = 'LinkedIn'
-    a.target = '_blank'; a.rel = 'noopener noreferrer'
-    row.appendChild(document.createTextNode('LinkedIn: '))
-    row.appendChild(a)
-    section.appendChild(row)
-  }
-
-  if (hasWebsite) {
-    const row = document.createElement('div')
-    row.className = 'card-contact-row'
-    const a = document.createElement('a')
-    a.className = 'card-contact-link'
-    a.href = person.website.trim()
-    a.textContent = person.website.trim()
-    a.target = '_blank'; a.rel = 'noopener noreferrer'
-    row.appendChild(document.createTextNode('Website: '))
     row.appendChild(a)
     section.appendChild(row)
   }
@@ -473,16 +471,6 @@ function buildCard(person, searchHash, source) {
   why.className = 'card-why'
   why.textContent = person.why
 
-  const footer = document.createElement('div')
-  footer.className = 'card-footer'
-
-  const link = document.createElement('a')
-  link.className = 'card-link'
-  link.href = person.url
-  link.textContent = person.url
-  link.target = '_blank'
-  link.rel = 'noopener noreferrer'
-
   const addBtn = document.createElement('button')
   addBtn.className = 'card-add-btn'
   addBtn.textContent = '+ Add to ORBIT'
@@ -515,14 +503,14 @@ function buildCard(person, searchHash, source) {
     addBtn.disabled = true
   })
 
-  footer.appendChild(link)
-  footer.appendChild(addBtn)
-
   card.appendChild(header)
   card.appendChild(role)
   card.appendChild(why)
-  card.appendChild(buildContactInfo(person))
-  card.appendChild(footer)
+  const linksEl = buildInlineLinks(person)
+  if (linksEl) card.appendChild(linksEl)
+  card.appendChild(addBtn)
+  const contactInfo = buildContactInfo(person)
+  if (contactInfo) card.appendChild(contactInfo)
 
   return card
 }
@@ -561,14 +549,30 @@ function init() {
 
   const ewsLabel = document.createElement('span')
   ewsLabel.className = 'ews-label'
-  ewsLabel.textContent = 'Your EWS Story'
+  ewsLabel.textContent = 'Your Story (Optional)'
+
+  const ewsGenLink = document.createElement('a')
+  ewsGenLink.href = 'https://early-warning-system-kappa.vercel.app/'
+  ewsGenLink.target = '_blank'
+  ewsGenLink.rel = 'noopener noreferrer'
+  ewsGenLink.textContent = 'Generate yours with EWS →'
+  ewsGenLink.style.cssText = 'display:block;font-family:"Courier Prime",monospace;font-size:11px;letter-spacing:0.07em;color:rgba(184,115,51,0.55);text-decoration:none;margin-bottom:12px;transition:color 0.12s;'
+  ewsGenLink.addEventListener('mouseover', () => { ewsGenLink.style.color = '#b87333' })
+  ewsGenLink.addEventListener('mouseout',  () => { ewsGenLink.style.color = 'rgba(184,115,51,0.55)' })
 
   const ewsArea = document.createElement('textarea')
   ewsArea.className = 'ews-textarea'
-  ewsArea.placeholder = 'Paste your Early Warning System story here for deeper, more personal results.'
+  ewsArea.placeholder = 'Paste anything about yourself — background, what you\'re working on, why you\'re searching.'
   ewsArea.rows = 5
+
+  const ewsHelper = document.createElement('div')
+  ewsHelper.textContent = 'Paste anything about yourself — your background, what you\'re working on, or why you\'re searching. Helps find more relevant people.'
+  ewsHelper.style.cssText = 'font-family:"DM Sans",sans-serif;font-size:12px;color:rgba(240,236,228,0.32);margin-top:8px;line-height:1.55;'
+
   ewsExpand.appendChild(ewsLabel)
+  ewsExpand.appendChild(ewsGenLink)
   ewsExpand.appendChild(ewsArea)
+  ewsExpand.appendChild(ewsHelper)
 
   ewsBtn.addEventListener('click', () => {
     ewsExpand.hidden = !ewsExpand.hidden

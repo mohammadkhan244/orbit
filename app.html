@@ -2777,7 +2777,40 @@
           var hasWebsite  = s.website  && s.website.trim()
           var hasBooks    = Array.isArray(s.books) && s.books.length > 0
           var contactNote = (s.contact_note || '').trim()
-          if (hasEmail || hasLinkedIn || hasWebsite || hasBooks || contactNote) {
+          card.appendChild(nameEl)
+          card.appendChild(roleEl)
+          card.appendChild(reasonEl)
+
+          // Inline links: View · LinkedIn · Website
+          var linkDefs = [
+            { label: 'View',     href: s.url      },
+            { label: 'LinkedIn', href: s.linkedin  },
+            { label: 'Website',  href: s.website   },
+          ].filter(function(d) { return d.href && d.href.trim() })
+          if (linkDefs.length > 0) {
+            var linksRow = document.createElement('div')
+            linksRow.style.cssText = 'margin-bottom:10px;'
+            linkDefs.forEach(function(d, i) {
+              if (i > 0) {
+                var sep = document.createElement('span')
+                sep.textContent = ' · '
+                sep.style.cssText = 'color:rgba(240,236,228,0.22);font-size:11px;'
+                linksRow.appendChild(sep)
+              }
+              var a = document.createElement('a')
+              a.href = d.href.trim()
+              a.textContent = d.label
+              a.target = '_blank'
+              a.rel = 'noopener noreferrer'
+              a.className = 'ol-suggest-contact-link'
+              a.style.fontSize = '11px'
+              linksRow.appendChild(a)
+            })
+            card.appendChild(linksRow)
+          }
+
+          // Contact section: email, books, note only
+          if (hasEmail || hasBooks || contactNote) {
             var contactEl = document.createElement('div')
             contactEl.className = 'ol-suggest-contact'
             if (hasEmail) {
@@ -2788,30 +2821,6 @@
               a.href = 'mailto:' + s.email.trim()
               a.textContent = s.email.trim()
               r.appendChild(document.createTextNode('Email: '))
-              r.appendChild(a)
-              contactEl.appendChild(r)
-            }
-            if (hasLinkedIn) {
-              var r = document.createElement('div')
-              r.className = 'ol-suggest-contact-row'
-              var a = document.createElement('a')
-              a.className = 'ol-suggest-contact-link'
-              a.href = s.linkedin.trim()
-              a.textContent = 'LinkedIn'
-              a.target = '_blank'; a.rel = 'noopener noreferrer'
-              r.appendChild(document.createTextNode('LinkedIn: '))
-              r.appendChild(a)
-              contactEl.appendChild(r)
-            }
-            if (hasWebsite) {
-              var r = document.createElement('div')
-              r.className = 'ol-suggest-contact-row'
-              var a = document.createElement('a')
-              a.className = 'ol-suggest-contact-link'
-              a.href = s.website.trim()
-              a.textContent = s.website.trim()
-              a.target = '_blank'; a.rel = 'noopener noreferrer'
-              r.appendChild(document.createTextNode('Website: '))
               r.appendChild(a)
               contactEl.appendChild(r)
             }
@@ -2833,14 +2842,7 @@
               n.textContent = contactNote
               contactEl.appendChild(n)
             }
-            card.appendChild(nameEl)
-            card.appendChild(roleEl)
-            card.appendChild(reasonEl)
             card.appendChild(contactEl)
-          } else {
-            card.appendChild(nameEl)
-            card.appendChild(roleEl)
-            card.appendChild(reasonEl)
           }
 
           var addBtn = document.createElement('button')
