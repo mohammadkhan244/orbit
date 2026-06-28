@@ -213,6 +213,34 @@ async function init() {
     document.dispatchEvent(new CustomEvent('orbit:contacts-updated', { detail: { contacts } }))
   }
 
+  function generateNextActionForContact(contact, sid) {
+    const identity = window.ORBIT_IDENTITY || {}
+    const gravityProfile = { mission: identity.mission || '', thinkingPartner: identity.worldview || '' }
+    fetch('/api/next-action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contact, stage: 'IDENTIFIED', gravityProfile }),
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (!data.action) return
+      const nextAction = { action: data.action, channel: data.channel || 'other', generatedAt: new Date().toISOString() }
+      const idx = contacts.findIndex(c => c.id === contact.id)
+      if (idx >= 0) {
+        contacts[idx] = { ...contacts[idx], nextAction }
+        syncGlobal()
+      }
+      if (sid) {
+        fetch('/api/contacts-kv', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId: sid, contactId: contact.id, updates: { nextAction } }),
+        }).catch(() => {})
+      }
+    })
+    .catch(() => {})
+  }
+
   // ── progress bar ──
   const progress = document.createElement('div')
   progress.className = 'orbit-progress'
@@ -351,7 +379,7 @@ async function init() {
     }
   })()
 
-  // ── CONTACT_ADDED: canvas + KV ───────────────────────────────────
+  // ── CONTACT_ADDED: canvas + KV + next action ─────────────────────
   document.addEventListener(EVENTS.CONTACT_ADDED, async e => {
     const contact = e.detail
     contacts = [...contacts, contact]
@@ -359,7 +387,10 @@ async function init() {
     canvas.update(contacts)
     updateProgress(contacts)
     syncGlobal()
-    if (sessionId) kvSetContacts(sessionId, contacts).catch(() => {})
+    if (sessionId) {
+      kvSetContacts(sessionId, contacts).catch(() => {})
+      generateNextActionForContact(contact, sessionId)
+    }
   })
 
   // ── STAGE_CHANGED: KV sync ────────────────────────────────────────

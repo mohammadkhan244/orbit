@@ -151,6 +151,9 @@ export class SidePanel {
           <option value="CONVERSATION">Conversation</option>
         </select>
 
+        <label class="panel-field-label">NEXT STEP</label>
+        <div class="panel-next-action"></div>
+
         <label class="panel-field-label">NOTES</label>
         <textarea class="panel-notes" rows="4" placeholder="Add a note…"></textarea>
 
@@ -159,6 +162,8 @@ export class SidePanel {
     `
 
     el.querySelector('.panel-close').addEventListener('click', () => this.close())
+
+    const NEXT_ACTION_STAGES = new Set(['REPLIED', 'CONVERSATION', 'INNER_CIRCLE'])
 
     el.querySelector('.panel-stage-select').addEventListener('change', e => {
       if (!this._current) return
@@ -179,6 +184,10 @@ export class SidePanel {
             updates: { status: newStatus }
           })
         }).catch(() => {})
+
+        if (NEXT_ACTION_STAGES.has(newStatus)) {
+          this._generateNextAction(this._current, newStatus, sessionId)
+        }
       }
     })
 
@@ -230,9 +239,99 @@ export class SidePanel {
     this.el.querySelector('.panel-reachability-notes').textContent = contact.reachability_notes || ''
 
     this.el.querySelector('.panel-stage-select').value = contact.status
+    this._renderNextAction(contact.nextAction)
     this.el.querySelector('.panel-notes').value = contact.notes || ''
     this.el.querySelector('.panel-date-added').textContent = `Added ${contact.date_added}`
     this.el.classList.add('open')
+  }
+
+  _renderNextAction(nextAction) {
+    const el = this.el.querySelector('.panel-next-action')
+    el.innerHTML = ''
+
+    if (!nextAction) {
+      const loading = document.createElement('div')
+      loading.style.cssText = 'font-family:"DM Sans",sans-serif;font-size:12px;color:rgba(240,236,228,0.3);font-style:italic;padding:4px 0;'
+      loading.textContent = 'Generating next step...'
+      el.appendChild(loading)
+      return
+    }
+
+    if (!nextAction.action) return
+
+    const text = document.createElement('div')
+    text.style.cssText = 'font-family:"DM Sans",sans-serif;font-size:13px;color:#f0ece4;line-height:1.6;margin-bottom:8px;'
+    text.textContent = nextAction.action
+    el.appendChild(text)
+
+    const CHANNEL_LINKS = {
+      email:    { label: 'Email them →',          url: () => this._current?.email ? `mailto:${this._current.email}` : null },
+      linkedin: { label: 'Connect on LinkedIn →', url: () => this._current?.linkedin || null },
+      website:  { label: 'Visit their site →',    url: () => this._current?.website || this._current?.url || null },
+      substack: { label: 'Find them on Substack →', url: () => this._current?.url || null },
+    }
+    const ch = CHANNEL_LINKS[nextAction.channel]
+    if (ch) {
+      const href = ch.url()
+      if (href) {
+        const link = document.createElement('a')
+        link.href = href
+        link.textContent = ch.label
+        link.target = '_blank'
+        link.rel = 'noopener noreferrer'
+        link.style.cssText = 'display:block;font-family:"Courier Prime",monospace;font-size:12px;color:#b87333;text-decoration:none;margin-bottom:8px;'
+        link.addEventListener('mouseover', () => { link.style.textDecoration = 'underline' })
+        link.addEventListener('mouseout',  () => { link.style.textDecoration = 'none' })
+        el.appendChild(link)
+      }
+    }
+
+    if (nextAction.generatedAt) {
+      const d = new Date(nextAction.generatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      const date = document.createElement('div')
+      date.style.cssText = 'font-family:"DM Sans",sans-serif;font-size:11px;color:rgba(240,236,228,0.22);'
+      date.textContent = `Updated ${d}`
+      el.appendChild(date)
+    }
+  }
+
+  _generateNextAction(contact, stage, sessionId) {
+    const identity = window.ORBIT_IDENTITY || {}
+    const gravityProfile = { mission: identity.mission || '', thinkingPartner: identity.worldview || '' }
+
+    this._renderNextAction(undefined)
+
+    fetch('/api/next-action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contact, stage, gravityProfile }),
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (!data.action) return
+      const nextAction = { action: data.action, channel: data.channel || 'other', generatedAt: new Date().toISOString() }
+
+      const contacts = window.ORBIT_CONTACTS || []
+      const idx = contacts.findIndex(c => c.id === contact.id)
+      if (idx >= 0) {
+        contacts[idx] = { ...contacts[idx], nextAction }
+        window.ORBIT_CONTACTS = [...contacts]
+      }
+
+      if (this._current && this._current.id === contact.id) {
+        this._current = { ...this._current, nextAction }
+        this._renderNextAction(nextAction)
+      }
+
+      if (sessionId) {
+        fetch('/api/contacts-kv', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, contactId: contact.id, updates: { nextAction } }),
+        }).catch(() => {})
+      }
+    })
+    .catch(() => {})
   }
 
   close() {
