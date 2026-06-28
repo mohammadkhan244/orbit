@@ -127,6 +127,15 @@ Suggest exactly 3 real, verifiable people — one per tier:
 2. THINK WITH (tier: "think"): Active, reachable, at a similar stage. A peer working on adjacent problems right now.
 3. SHARE WITH (tier: "share"): Earlier in the journey. Emerging, would benefit from this perspective.
 
+REACHABILITY IS CRITICAL. For each person:
+- LEARN FROM: may be well-known but must have a public presence — active website, newsletter, Substack, or social profile where they can actually be contacted or followed.
+- THINK WITH: must be actively reachable — someone who responds to emails, is on LinkedIn, posts regularly, or has a contact form. Not a celebrity. Not a corporate executive. Someone who would actually reply to a thoughtful cold email.
+- SHARE WITH: must be an emerging voice — recently published, actively building, early in their public work. Easy to reach.
+
+Avoid: famous academics who don't respond, CEOs of large companies, people who haven't published anything in 3+ years, fictional or unverifiable people.
+
+For every person, verify via web search that they are real, active, and have a public way to be contacted. If you cannot verify, find someone else.
+
 Use web search to confirm they exist and are active. Exclude anyone in the existing contacts list.
 Return in order: learn first, think second, share third.
 

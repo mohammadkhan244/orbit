@@ -131,6 +131,70 @@ const ls = {
 }
 
 
+// ── Canvas first-time hint ────────────────────────────────────────────────────
+
+function showCanvasHint() {
+  const panel = document.createElement('div')
+  panel.style.cssText = [
+    'position:fixed',
+    'bottom:70px',
+    'left:50%',
+    'transform:translateX(-50%)',
+    'max-width:480px',
+    'width:calc(100% - 48px)',
+    'background:rgba(10,10,10,0.95)',
+    'border:1px solid rgba(184,115,51,0.3)',
+    'border-radius:6px',
+    'padding:16px 20px',
+    'z-index:50',
+    'box-sizing:border-box',
+  ].join(';')
+
+  const text = document.createElement('p')
+  text.style.cssText = 'font-family:"DM Sans",sans-serif;font-size:13px;color:#f0ece4;line-height:1.6;margin:0 0 14px;'
+  text.textContent = 'Everyone starts in IDENTIFIED — someone worth watching. As you reach out, they reply, and the relationship builds, drag them closer. The inner circle isn\'t a goal. It\'s what happens when the orbit does its job.'
+
+  const row = document.createElement('div')
+  row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:12px;'
+
+  const gotItBtn = document.createElement('button')
+  gotItBtn.textContent = 'Got it'
+  gotItBtn.style.cssText = [
+    'background:none',
+    'border:1px solid rgba(184,115,51,0.55)',
+    'color:#b87333',
+    'font-family:"Courier Prime",monospace',
+    'font-size:11px',
+    'letter-spacing:0.14em',
+    'text-transform:uppercase',
+    'padding:0 16px',
+    'height:32px',
+    'cursor:pointer',
+    'transition:all 0.12s ease',
+    'flex-shrink:0',
+  ].join(';')
+  gotItBtn.addEventListener('mouseover', () => { gotItBtn.style.background = 'rgba(184,115,51,0.1)'; gotItBtn.style.borderColor = '#b87333' })
+  gotItBtn.addEventListener('mouseout',  () => { gotItBtn.style.background = 'none'; gotItBtn.style.borderColor = 'rgba(184,115,51,0.55)' })
+
+  const dragHint = document.createElement('span')
+  dragHint.textContent = 'Drag nodes between rings to update stage'
+  dragHint.style.cssText = 'font-family:"DM Sans",sans-serif;font-size:11px;color:rgba(240,236,228,0.3);text-align:right;'
+
+  row.appendChild(gotItBtn)
+  row.appendChild(dragHint)
+  panel.appendChild(text)
+  panel.appendChild(row)
+  document.body.appendChild(panel)
+
+  function dismiss() {
+    try { localStorage.setItem('orbit_canvas_hint_seen', '1') } catch {}
+    panel.remove()
+  }
+
+  const timer = setTimeout(dismiss, 12000)
+  gotItBtn.addEventListener('click', () => { clearTimeout(timer); dismiss() })
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 
 async function init() {
@@ -263,6 +327,11 @@ async function init() {
       canvas.update(contacts)
       updateProgress(contacts)
       syncGlobal()
+
+      // Show canvas hint once to non-admin users who have contacts
+      if (!window.ORBIT_ADMIN && contacts.length > 0 && !localStorage.getItem('orbit_canvas_hint_seen')) {
+        showCanvasHint()
+      }
 
       // Show suggestion banner to non-guest users with fewer than 3 contacts
       if (!window.ORBIT_GUEST && contacts.length < 3) {
